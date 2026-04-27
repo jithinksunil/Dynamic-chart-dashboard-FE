@@ -1,0 +1,9 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "files": ["src/**/*.{ts,tsx,js,jsx,css,html}", "*.{ts,js,json,md}"],
+  "ignorePaths": ["node_modules", "dist", "bun.lock"],
+  "dictionaries": ["typescript", "node", "npm", "html", "css"],
+  "words": ["dynamicdashboardfe"],
+  "ignoreWords": []
+}
