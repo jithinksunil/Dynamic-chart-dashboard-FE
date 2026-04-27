@@ -79,6 +79,7 @@ function FileInput<T extends FieldValues>({
               onBlur={field.onBlur}
             >
               <input
+                key={selectedFile?.name ?? 'empty-file'}
                 ref={inputRef}
                 id={name}
                 type="file"

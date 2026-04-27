@@ -1,0 +1,616 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, FileSpreadsheet, Plus, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
+import { Controller, useForm } from 'react-hook-form'
+import type { Control } from 'react-hook-form'
+import { Link, useParams } from 'react-router-dom'
+import { z } from 'zod'
+import type { ChartDatum, ChartRenderItem } from '@/interfaces'
+import { PrimaryButton } from '@/components/buttons'
+import { TextInput } from '@/components/forms'
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Label,
+  buttonVariants,
+} from '@/components/ui'
+import { useBuildChart, useChartBuilder, useCsvUploadChartData, useListCsvUploads } from '@/hooks'
+import { cn } from '@/lib/utils'
+import {
+  formatChartAxisValue,
+  formatChartTooltipValue,
+  getChartAxisKey,
+  getChartDisplayName,
+  getChartTotal,
+  isDateAxis,
+  normalizeChartRenderItems,
+  sortChartData,
+  toastMessage,
+} from '@/utility'
+
+const chartBuilderSchema = z.object({
+  name: z.string().trim().min(1, 'Please enter a chart name'),
+  chartType: z.string().trim().min(1, 'Please select a chart type'),
+  xAxis: z.string().trim().min(1, 'Please select an x-axis'),
+  yAxis: z.string().trim().min(1, 'Please select a y-axis'),
+})
+
+type ChartBuilderFormValues = z.infer<typeof chartBuilderSchema>
+
+const CHART_TYPE_OPTIONS = ['BAR', 'LINE', 'PIE']
+
+const dateFormatter = new Intl.DateTimeFormat('en-IN', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
+interface SelectFieldProps {
+  name: keyof ChartBuilderFormValues
+  label: string
+  options: string[]
+  control: Control<ChartBuilderFormValues>
+  placeholder: string
+}
+
+const CHART_COLORS = ['#2563eb', '#0f766e', '#db2777', '#f59e0b', '#7c3aed', '#ea580c']
+const DATE_AXIS_DATA_KEY = '__dateAxisTimestamp'
+
+interface ChartRendererProps {
+  chart: ChartRenderItem
+}
+
+function ChartRenderer({ chart }: ChartRendererProps) {
+  const normalizedChartType = chart.chartType.trim().toUpperCase()
+  const categoryKey = getChartAxisKey({
+    data: chart.data,
+    preferredKey: chart.xAxis,
+    kind: 'category',
+  })
+  const numberKey = getChartAxisKey({
+    data: chart.data,
+    preferredKey: chart.yAxis,
+    kind: 'number',
+  })
+  const hasDateXAxis = isDateAxis({ data: chart.data, key: categoryKey })
+  const sortedChartData = sortChartData({ data: chart.data, key: categoryKey })
+  const chartData = hasDateXAxis
+    ? sortedChartData.map((item) => ({
+        ...item,
+        [DATE_AXIS_DATA_KEY]:
+          typeof item[categoryKey ?? ''] === 'string'
+            ? Date.parse(item[categoryKey ?? ''] as string)
+            : null,
+      }))
+    : sortedChartData
+
+  if (chartData.length === 0 || !categoryKey || !numberKey) {
+    return (
+      <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+        We could not map this chart response into a Recharts dataset yet.
+      </div>
+    )
+  }
+
+  if (normalizedChartType === 'PIE') {
+    return (
+      <div className="h-80 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey={numberKey}
+              nameKey={categoryKey}
+              cx="50%"
+              cy="50%"
+              outerRadius={110}
+              label
+            >
+              {chartData.map((_item: ChartDatum, index: number) => (
+                <Cell
+                  key={`${chart.id}-slice-${index}`}
+                  fill={CHART_COLORS[index % CHART_COLORS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              labelFormatter={(value) =>
+                hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
+              }
+            />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    )
+  }
+
+  if (normalizedChartType === 'LINE') {
+    return (
+      <div className="h-80 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/70" />
+            <XAxis
+              dataKey={hasDateXAxis ? DATE_AXIS_DATA_KEY : categoryKey}
+              type={hasDateXAxis ? 'number' : 'category'}
+              scale={hasDateXAxis ? 'time' : 'auto'}
+              domain={hasDateXAxis ? ['dataMin', 'dataMax'] : undefined}
+              tickFormatter={(value) =>
+                hasDateXAxis ? formatChartAxisValue({ value }) : String(value)
+              }
+              minTickGap={24}
+            />
+            <YAxis />
+            <Tooltip
+              labelFormatter={(value) =>
+                hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
+              }
+            />
+            <Legend />
+            <Line
+              type="monotone"
+              dataKey={numberKey}
+              stroke={CHART_COLORS[0]}
+              strokeWidth={2.5}
+              dot={{ r: 3 }}
+              activeDot={{ r: 5 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-80 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-border/70" />
+          <XAxis
+            dataKey={hasDateXAxis ? DATE_AXIS_DATA_KEY : categoryKey}
+            type={hasDateXAxis ? 'number' : 'category'}
+            scale={hasDateXAxis ? 'time' : 'auto'}
+            domain={hasDateXAxis ? ['dataMin', 'dataMax'] : undefined}
+            tickFormatter={(value) =>
+              hasDateXAxis ? formatChartAxisValue({ value }) : String(value)
+            }
+            minTickGap={24}
+          />
+          <YAxis />
+          <Tooltip
+            labelFormatter={(value) =>
+              hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
+            }
+          />
+          <Legend />
+          <Bar dataKey={numberKey} radius={[6, 6, 0, 0]} fill={CHART_COLORS[1]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function SelectField({ control, label, name, options, placeholder }: SelectFieldProps) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={name}>{label}</Label>
+          <select
+            id={name}
+            aria-invalid={!!fieldState.error}
+            className={cn(
+              'border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-lg border px-3 text-sm outline-none focus-visible:ring-3',
+              fieldState.error && 'border-destructive'
+            )}
+            {...field}
+          >
+            <option value="">{placeholder}</option>
+            {options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          {fieldState.error?.message ? (
+            <p className="text-destructive text-sm">{fieldState.error.message}</p>
+          ) : null}
+        </div>
+      )}
+    />
+  )
+}
+
+function CsvUploadDetail() {
+  const queryClient = useQueryClient()
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false)
+  const { csvUploadId = '' } = useParams()
+  const {
+    data: csvUploads = [],
+    isLoading: isLoadingCsvUploads,
+    isError: isCsvUploadsError,
+  } = useListCsvUploads()
+  const {
+    data: chartBuilderData,
+    isLoading: isLoadingBuilder,
+    isError: isBuilderError,
+    error: builderError,
+  } = useChartBuilder({
+    csvUploadId,
+    enabled: isBuilderOpen && csvUploadId.length > 0,
+  })
+  const {
+    data: chartData,
+    isLoading: isLoadingChartData,
+    isError: isChartDataError,
+    error: chartDataError,
+  } = useCsvUploadChartData({
+    csvUploadId,
+    enabled: csvUploadId.length > 0,
+  })
+  const { mutateAsync: createChart, isPending: isCreatingChart } = useBuildChart({ csvUploadId })
+
+  const { control, handleSubmit, getValues, setValue, reset } = useForm<ChartBuilderFormValues>({
+    resolver: zodResolver(chartBuilderSchema),
+    defaultValues: {
+      name: '',
+      chartType: CHART_TYPE_OPTIONS[0],
+      xAxis: '',
+      yAxis: '',
+    },
+  })
+
+  const csvUpload = useMemo(
+    () => csvUploads.find((upload) => upload.id === csvUploadId) ?? null,
+    [csvUploadId, csvUploads]
+  )
+  const chartItems = useMemo(() => normalizeChartRenderItems({ value: chartData }), [chartData])
+
+  const closeBuilderModal = useCallback((): void => {
+    setIsBuilderOpen(false)
+    reset({
+      name: '',
+      chartType: CHART_TYPE_OPTIONS[0],
+      xAxis: chartBuilderData?.xAxisOptions[0] ?? '',
+      yAxis: chartBuilderData?.yAxisOptions[0] ?? '',
+    })
+  }, [chartBuilderData, reset])
+
+  useEffect(() => {
+    if (!chartBuilderData) {
+      return
+    }
+
+    const currentValues = getValues()
+
+    if (!currentValues.chartType) {
+      setValue('chartType', CHART_TYPE_OPTIONS[0], { shouldValidate: true })
+    }
+    if (!currentValues.xAxis && chartBuilderData.xAxisOptions[0]) {
+      setValue('xAxis', chartBuilderData.xAxisOptions[0], { shouldValidate: true })
+    }
+    if (!currentValues.yAxis && chartBuilderData.yAxisOptions[0]) {
+      setValue('yAxis', chartBuilderData.yAxisOptions[0], { shouldValidate: true })
+    }
+  }, [chartBuilderData, getValues, setValue])
+
+  useEffect(() => {
+    if (!isBuilderOpen) {
+      return
+    }
+
+    const previousOverflow = document.body.style.overflow
+
+    const handleKeyDown = ({ key }: KeyboardEvent): void => {
+      if (key === 'Escape') {
+        closeBuilderModal()
+      }
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [closeBuilderModal, isBuilderOpen])
+
+  const onSubmit = async ({
+    name,
+    chartType,
+    xAxis,
+    yAxis,
+  }: ChartBuilderFormValues): Promise<void> => {
+    try {
+      await createChart({
+        name,
+        chartType,
+        xAxis,
+        yAxis,
+      })
+
+      toastMessage.success({ message: 'Chart created successfully' })
+      closeBuilderModal()
+      await queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-builder', csvUploadId] })
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
+    }
+  }
+
+  if (csvUploadId.length === 0) {
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-xl border border-border/70 shadow-sm">
+          <CardHeader>
+            <CardTitle>Missing upload id</CardTitle>
+            <CardDescription>We could not determine which CSV upload to open.</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-background min-h-screen">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="flex flex-col gap-4 rounded-lg border border-border/70 bg-card px-5 py-5 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-3">
+              <Link
+                to="/dashboard"
+                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to dashboard
+              </Link>
+              <div className="flex items-start gap-4">
+                <div className="bg-primary/10 border-primary/20 flex size-12 shrink-0 items-center justify-center rounded-lg border">
+                  <FileSpreadsheet className="text-primary h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h1 className="text-foreground text-2xl font-semibold">
+                    {csvUpload?.fileName ?? 'CSV upload'}
+                  </h1>
+                  <p className="text-muted-foreground text-sm">
+                    Upload id: <span className="text-foreground font-medium">{csvUploadId}</span>
+                  </p>
+                  {csvUpload?.createdAt ? (
+                    <p className="text-muted-foreground text-sm">
+                      Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <Button size="lg" className="sm:self-start" onClick={() => setIsBuilderOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Build Chart
+            </Button>
+          </div>
+
+          {isLoadingCsvUploads ? (
+            <p className="text-muted-foreground text-sm">Loading upload details...</p>
+          ) : null}
+          {isCsvUploadsError ? (
+            <p className="text-muted-foreground text-sm">
+              We could not match this page to the upload history, but the chart APIs can still load
+              by id.
+            </p>
+          ) : null}
+        </header>
+
+        <section className="space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-foreground text-lg font-semibold">Charts</h2>
+            <p className="text-muted-foreground text-sm">
+              Rendered from `/api/chart/{'{csvUploadId}'}` using each chart&apos;s metadata.
+            </p>
+          </div>
+
+          {isLoadingChartData ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+              Loading chart data...
+            </div>
+          ) : null}
+
+          {isChartDataError ? (
+            <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
+              <p className="text-foreground font-medium">Could not load chart data.</p>
+              <p className="text-muted-foreground">{chartDataError.message}</p>
+            </div>
+          ) : null}
+
+          {!isLoadingChartData && !isChartDataError && chartItems.length === 0 ? (
+            <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+              No chart data returned for this upload.
+            </div>
+          ) : null}
+
+          {!isLoadingChartData && !isChartDataError && chartItems.length > 0 ? (
+            <div className="grid gap-4 xl:grid-cols-2">
+              {chartItems.map((chartItem, index) => {
+                const totalValue = getChartTotal({
+                  data: chartItem.data,
+                  valueKey: getChartAxisKey({
+                    data: chartItem.data,
+                    preferredKey: chartItem.yAxis,
+                    kind: 'number',
+                  }),
+                })
+
+                return (
+                  <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
+                    <CardHeader>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-1">
+                          <CardTitle>
+                            {getChartDisplayName({ value: chartItem.raw, index })}
+                          </CardTitle>
+                          <CardDescription>
+                            {chartItem.chartType} chart using {chartItem.xAxis} and{' '}
+                            {chartItem.yAxis}
+                          </CardDescription>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-40">
+                          <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
+                            <p className="text-muted-foreground text-xs">Rows</p>
+                            <p className="text-foreground font-medium">{chartItem.data.length}</p>
+                          </div>
+                          <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
+                            <p className="text-muted-foreground text-xs">Total</p>
+                            <p className="text-foreground font-medium">
+                              {totalValue !== null ? totalValue.toLocaleString('en-IN') : '—'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <ChartRenderer chart={chartItem} />
+                      <details className="rounded-lg border border-border/70 bg-muted/20">
+                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
+                          Raw chart JSON
+                        </summary>
+                        <div className="px-4 pb-4">
+                          <pre className="bg-muted/40 text-foreground overflow-x-auto rounded-lg border border-border/70 p-4 text-sm">
+                            {JSON.stringify(chartItem.raw, null, 2)}
+                          </pre>
+                        </div>
+                      </details>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          ) : null}
+        </section>
+
+        {isBuilderOpen ? (
+          <div
+            className="fixed inset-0 z-50 overflow-y-auto bg-black/45 px-4 py-6 sm:px-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="build-chart-title"
+          >
+            <div className="flex min-h-full items-start justify-center sm:items-center">
+              <div className="absolute inset-0" aria-hidden="true" onClick={closeBuilderModal} />
+              <Card className="relative z-10 w-full max-w-lg border border-border/70 shadow-xl">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <CardTitle id="build-chart-title">Build Chart</CardTitle>
+                      <CardDescription>
+                        Select one x-axis, one y-axis, and one chart type to create the chart.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Close modal"
+                      onClick={closeBuilderModal}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="max-h-[calc(100svh-12rem)] space-y-4 overflow-y-auto">
+                  {isLoadingBuilder ? (
+                    <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+                      Loading chart builder options...
+                    </div>
+                  ) : null}
+
+                  {isBuilderError ? (
+                    <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
+                      <p className="text-foreground font-medium">
+                        Could not load chart builder data.
+                      </p>
+                      <p className="text-muted-foreground">{builderError.message}</p>
+                    </div>
+                  ) : null}
+
+                  {!isLoadingBuilder && !isBuilderError && chartBuilderData ? (
+                    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+                      <TextInput
+                        control={control}
+                        name="name"
+                        label="Chart name"
+                        placeholder="Enter chart name"
+                      />
+                      <SelectField
+                        control={control}
+                        name="chartType"
+                        label="Chart type"
+                        options={CHART_TYPE_OPTIONS}
+                        placeholder="Select chart type"
+                      />
+                      <SelectField
+                        control={control}
+                        name="xAxis"
+                        label="X-axis"
+                        options={chartBuilderData.xAxisOptions}
+                        placeholder="Select x-axis"
+                      />
+                      <SelectField
+                        control={control}
+                        name="yAxis"
+                        label="Y-axis"
+                        options={chartBuilderData.yAxisOptions}
+                        placeholder="Select y-axis"
+                      />
+
+                      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                          onClick={closeBuilderModal}
+                        >
+                          Cancel
+                        </Button>
+                        <PrimaryButton
+                          type="submit"
+                          className="w-full sm:w-auto"
+                          disabled={isCreatingChart}
+                        >
+                          {isCreatingChart ? 'Creating chart…' : 'Create chart'}
+                        </PrimaryButton>
+                      </div>
+                    </form>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+export default CsvUploadDetail

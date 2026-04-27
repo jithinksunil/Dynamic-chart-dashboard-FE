@@ -6,3 +6,4 @@ export type {
   SignInRequest,
   SignUpRequest,
 } from './auth'
+export * from './csv.interface'
