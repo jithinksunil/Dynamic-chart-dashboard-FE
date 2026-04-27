@@ -26,24 +26,36 @@ src/
 
 Two axios instances live in `src/api/axios.ts`:
 
-| Instance       | Source                       | When to use                                                                                |
-| -------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
-| `axiosPublic`  | import directly from `@/api` | Unauthenticated endpoints (login, register, public data)                                   |
-| `axiosPrivate` | via `useAxiosPrivate()` hook | Authenticated endpoints — attaches `Authorization` header and handles token refresh on 401 |
+| Instance       | Where to use                              | When to use                                                                                |
+| -------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `axiosPublic`  | imported directly in the **request file** | Unauthenticated endpoints (login, register, public data)                                   |
+| `axiosPrivate` | via `useAxiosPrivate()` in the **hook**   | Authenticated endpoints — attaches `Authorization` header and handles token refresh on 401 |
 
-**Public calls** — import `axiosPublic` at the top of the hook file and pass it to the request function:
+**Public requests** — import `axiosPublic` directly inside `src/requests/<domain>.requests.ts`. No axios parameter needed:
 
 ```ts
-import { axiosPublic } from '@/api'
+// src/requests/auth.requests.ts
+import { axiosPublic } from '../api'
+
+export const signIn = ({ data }: { data: SignInRequest }) =>
+  axiosPublic.post<SigninResponse>('/auth/sign-in', data)
 ```
 
-**Private calls** — call `useAxiosPrivate()` inside the TanStack hook to get an interceptor-equipped instance:
+**Private requests** — the request function accepts an `AxiosInstance` parameter. The hook calls `useAxiosPrivate()` and passes the result in:
 
 ```ts
+// src/requests/dashboard.requests.ts
+import type { AxiosInstance } from 'axios'
+
+export const getWidgets = ({ axios }: { axios: AxiosInstance }) =>
+  axios.get<WidgetListResponse>('/dashboard/widgets')
+```
+
+```ts
+// src/hooks/dashboard.hooks.ts
 const axios = useAxiosPrivate()
+const response = await getWidgets({ axios })
 ```
-
-Request functions are axios-instance-agnostic — they always accept an `AxiosInstance` argument. The hook layer decides which instance to inject.
 
 ---
 
@@ -86,31 +98,43 @@ export * from './dashboard.interface'
 
 Each function is a thin wrapper around an axios call. Always pass the response generic type to the axios method so the return type is `Promise<AxiosResponse<T>>`.
 
+- **Public endpoints**: import `axiosPublic` directly — no axios parameter.
+- **Private endpoints**: accept `{ axios: AxiosInstance }` — the hook injects the interceptor-equipped instance.
+
 ```ts
 // src/requests/dashboard.requests.ts
 
 import type { AxiosInstance } from 'axios'
+import { axiosPublic } from '../api'
 import type { CreateWidgetPayload, Widget, WidgetListResponse } from '@/interfaces'
 
-// GET — no body, params go in the URL or as axios `params`
-export const getWidgets = (axios: AxiosInstance) =>
+// Public GET — axiosPublic imported directly, no parameter
+export const getPublicAnnouncements = () =>
+  axiosPublic.get<AnnouncementListResponse>('/announcements')
+
+// Private GET — accepts axios from hook
+export const getWidgets = ({ axios }: { axios: AxiosInstance }) =>
   axios.get<WidgetListResponse>('/dashboard/widgets')
 
-export const getWidgetById = (axios: AxiosInstance, id: string) =>
+export const getWidgetById = ({ axios, id }: { axios: AxiosInstance; id: string }) =>
   axios.get<Widget>(`/dashboard/widgets/${id}`)
 
-// POST / PUT / PATCH — typed payload
-export const createWidget = (axios: AxiosInstance, data: CreateWidgetPayload) =>
+// Private POST / PUT / PATCH — typed payload
+export const createWidget = ({ axios, data }: { axios: AxiosInstance; data: CreateWidgetPayload }) =>
   axios.post<Widget>('/dashboard/widgets', data)
 
-export const updateWidget = (
-  axios: AxiosInstance,
-  id: string,
+export const updateWidget = ({
+  axios,
+  id,
+  data,
+}: {
+  axios: AxiosInstance
+  id: string
   data: Partial<CreateWidgetPayload>
-) => axios.patch<Widget>(`/dashboard/widgets/${id}`, data)
+}) => axios.patch<Widget>(`/dashboard/widgets/${id}`, data)
 
-// DELETE — no response body, use `void` generic
-export const deleteWidget = (axios: AxiosInstance, id: string) =>
+// Private DELETE — no response body, use `void` generic
+export const deleteWidget = ({ axios, id }: { axios: AxiosInstance; id: string }) =>
   axios.delete<void>(`/dashboard/widgets/${id}`)
 ```
 
@@ -131,8 +155,9 @@ Wrap each request in a TanStack Query hook. Follow these rules:
 - Always unwrap `response.data` in `queryFn` / `mutationFn` so consumers receive the typed payload directly.
 - `queryKey` arrays must include every variable the query depends on so cache invalidation is correct.
 - Add an `enabled` parameter (default `true`) to every `useQuery` hook so callers can defer fetching.
-- **Private endpoints**: call `useAxiosPrivate()` at the top of the hook — it returns an `AxiosInstance` with auth interceptors wired up.
-- **Public endpoints**: import `axiosPublic` directly from `@/api` and pass it to the request function — no hook needed.
+- **Private endpoints**: call `useAxiosPrivate()` at the top of the hook and pass the result to the request function.
+- **Public endpoints**: `axiosPublic` is already imported inside the request file — the hook calls the request with no axios argument.
+- **`onSuccess` / `onError` belong in the component**, not the hook. Do not add these callbacks inside `useMutation` or `useQuery` hooks — callers handle side-effects (toasts, redirects, state updates) via the mutation/query result directly.
 
 ```ts
 // src/hooks/dashboard.hooks.ts
@@ -246,7 +271,7 @@ export * from './dashboard.hooks'
 - [ ] Requests exported from `src/requests/index.ts`
 - [ ] TanStack Query hooks added to `src/hooks/<domain>.hooks.ts`
   - [ ] `useQuery` for reads with `queryKey` covering all dependencies and `enabled` param
-  - [ ] `useMutation` for writes with `onSuccess` cache invalidation where needed
+  - [ ] `useMutation` for writes — no `onSuccess`/`onError` in the hook; handled by the component
 - [ ] Hooks exported from `src/hooks/index.ts`
 
 ---
@@ -255,11 +280,11 @@ export * from './dashboard.hooks'
 
 | Concern            | Rule                                                                             |
 | ------------------ | -------------------------------------------------------------------------------- |
-| Private axios      | `const axios = useAxiosPrivate()` inside the hook — handles auth + token refresh |
-| Public axios       | Import `axiosPublic` from `@/api` directly — no hook, no interceptors needed     |
+| Private axios      | `const axios = useAxiosPrivate()` in the hook, passed to the request function    |
+| Public axios       | `axiosPublic` imported directly in the **request file** — not in the hook        |
 | Generic type       | Always provide `<ResponseType>` to axios method                                  |
 | Data unwrap        | `return response.data` inside `queryFn` / `mutationFn`                           |
 | Query key          | `[domain, ...params]` — include every variable used                              |
 | Deferred fetch     | `enabled` boolean param on every `useQuery` hook                                 |
-| Cache invalidation | Call `queryClient.invalidateQueries` in mutation `onSuccess`                     |
+| Side-effects       | `onSuccess`/`onError` go in the **component**, not the hook                      |
 | Type imports       | Use `import type` for type-only imports                                          |

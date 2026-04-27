@@ -1,1 +1,1 @@
-export type { TokenResponse, AuthContextValue, AuthObject, Auth, SigninResponse } from './auth'
+export type { AuthContextValue, AuthObject, Auth, SigninResponse, SignInRequest, SignUpRequest } from './auth'
