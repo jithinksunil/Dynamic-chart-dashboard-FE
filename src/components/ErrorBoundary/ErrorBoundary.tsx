@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from 'react-error-boundary'
-import { Button } from '@/components/ui/button'
+import { PrimaryButton, SecondaryButton } from '@/components/buttons'
 
 function Fallback({ error, resetErrorBoundary }: FallbackProps) {
   return (
@@ -18,10 +18,8 @@ function Fallback({ error, resetErrorBoundary }: FallbackProps) {
           </pre>
         )}
         <div className="mt-6 flex justify-center gap-3">
-          <Button onClick={resetErrorBoundary} variant="outline">
-            Try again
-          </Button>
-          <Button onClick={() => window.location.reload()}>Reload page</Button>
+          <SecondaryButton onClick={resetErrorBoundary}>Try again</SecondaryButton>
+          <PrimaryButton onClick={() => window.location.reload()}>Reload page</PrimaryButton>
         </div>
       </div>
     </div>

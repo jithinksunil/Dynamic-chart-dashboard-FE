@@ -1,8 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { LayoutDashboard } from 'lucide-react'
 import {
   Card,
@@ -12,11 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { LinkButton, PrimaryButton } from '@/components/buttons'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { useSignIn } from '@/hooks'
 import { useAuth } from '@/context'
+import { toastMessage } from '@/utility'
 
 const signInSchema = z.object({
   email: z.email('Enter a valid email'),
@@ -39,10 +39,10 @@ function SignIn() {
     try {
       const data = await signIn(values)
       setAuth({ accessToken: data.accessToken, role: data.role })
-      toast.success('Welcome back!')
+      toastMessage.success({ message: 'Welcome back!' })
       navigate('/dashboard')
-    } catch {
-      toast.error('Invalid email or password')
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
     }
   }
 
@@ -85,17 +85,11 @@ function SignIn() {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <PrimaryButton type="submit" className="w-full" disabled={isPending}>
                 {isPending ? 'Signing in…' : 'Sign in'}
-              </Button>
+              </PrimaryButton>
               <p className="text-muted-foreground text-center text-sm">
-                Don&apos;t have an account?{' '}
-                <Link
-                  to="/sign-up"
-                  className="text-primary hover:text-primary/80 font-medium transition-colors"
-                >
-                  Sign up
-                </Link>
+                Don&apos;t have an account? <LinkButton to="/sign-up">Sign up</LinkButton>
               </p>
             </CardFooter>
           </form>

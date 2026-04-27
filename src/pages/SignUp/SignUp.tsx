@@ -1,8 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
-import toast from 'react-hot-toast'
+import { useNavigate } from 'react-router-dom'
 import { LayoutDashboard } from 'lucide-react'
 import {
   Card,
@@ -12,11 +11,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { LinkButton, PrimaryButton } from '@/components/buttons'
 import { TextInput } from '@/components/forms/TextInput'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { useSignUp } from '@/hooks'
+import { toastMessage } from '@/utility'
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/
 const passwordValidationMessage =
@@ -42,10 +42,10 @@ function SignUp() {
   const onSubmit = async (values: SignUpValues): Promise<void> => {
     try {
       await signUp(values)
-      toast.success('Account created! Please sign in.')
-      navigate('/sign-in')
-    } catch {
-      toast.error('Could not create account. Please try again.')
+      toastMessage.success({ message: 'Account created! Please sign in.' })
+      navigate('/')
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
     }
   }
 
@@ -97,17 +97,11 @@ function SignUp() {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-3 pt-2">
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <PrimaryButton type="submit" className="w-full" disabled={isPending}>
                 {isPending ? 'Creating account…' : 'Create account'}
-              </Button>
+              </PrimaryButton>
               <p className="text-muted-foreground text-center text-sm">
-                Already have an account?{' '}
-                <Link
-                  to="/sign-in"
-                  className="text-primary hover:text-primary/80 font-medium transition-colors"
-                >
-                  Sign in
-                </Link>
+                Already have an account? <LinkButton to="/">Sign in</LinkButton>
               </p>
             </CardFooter>
           </form>

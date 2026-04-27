@@ -273,16 +273,18 @@ export * from './dashboard.hooks'
 Prefer **`mutateAsync` with `async`/`await` inside a `try` / `catch`** over `mutate` with `onSuccess` / `onError` callbacks. The async form keeps success and failure side-effects co-located with the submit handler, plays nicely with `react-hook-form`'s async `onSubmit`, and lets you `await` follow-up work (e.g. token storage before navigation).
 
 ```tsx
+import { toastMessage } from '@/utility'
+
 const { mutateAsync: signIn, isPending } = useSignIn()
 
 const onSubmit = async (values: SignInValues): Promise<void> => {
   try {
     const data = await signIn(values)
     setAuth({ accessToken: data.accessToken, role: data.role })
-    toast.success('Welcome back!')
+    toastMessage.success({ message: 'Welcome back!' })
     navigate('/dashboard')
-  } catch {
-    toast.error('Invalid email or password')
+  } catch (error: unknown) {
+    toastMessage.error({ err: error })
   }
 }
 ```
@@ -292,6 +294,7 @@ Rules:
 - Destructure as `mutateAsync` (rename it to a domain-specific verb, e.g. `signIn`, `createWidget`).
 - Wrap the call in `try` / `catch` — never let a rejected promise escape `react-hook-form`'s `handleSubmit`.
 - Use `mutate` (no `Async`) only for fire-and-forget calls where the component does not need to sequence further work after success.
+- **Always use `toastMessage` from `@/utility`** for success/error feedback — never `react-hot-toast`'s `toast` directly. Pass the caught error as `{ err: error }` to `toastMessage.error` so the backend's `response.data.message` is extracted automatically; pass strings as `{ message }` to `toastMessage.success` / `info`.
 
 ---
 
