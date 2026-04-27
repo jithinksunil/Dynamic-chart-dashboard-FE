@@ -120,8 +120,13 @@ export const getWidgetById = ({ axios, id }: { axios: AxiosInstance; id: string 
   axios.get<Widget>(`/dashboard/widgets/${id}`)
 
 // Private POST / PUT / PATCH — typed payload
-export const createWidget = ({ axios, data }: { axios: AxiosInstance; data: CreateWidgetPayload }) =>
-  axios.post<Widget>('/dashboard/widgets', data)
+export const createWidget = ({
+  axios,
+  data,
+}: {
+  axios: AxiosInstance
+  data: CreateWidgetPayload
+}) => axios.post<Widget>('/dashboard/widgets', data)
 
 export const updateWidget = ({
   axios,
@@ -263,6 +268,33 @@ export * from './dashboard.hooks'
 
 ---
 
+## 4. Consuming mutations in components
+
+Prefer **`mutateAsync` with `async`/`await` inside a `try` / `catch`** over `mutate` with `onSuccess` / `onError` callbacks. The async form keeps success and failure side-effects co-located with the submit handler, plays nicely with `react-hook-form`'s async `onSubmit`, and lets you `await` follow-up work (e.g. token storage before navigation).
+
+```tsx
+const { mutateAsync: signIn, isPending } = useSignIn()
+
+const onSubmit = async (values: SignInValues): Promise<void> => {
+  try {
+    const data = await signIn(values)
+    setAuth({ accessToken: data.accessToken, role: data.role })
+    toast.success('Welcome back!')
+    navigate('/dashboard')
+  } catch {
+    toast.error('Invalid email or password')
+  }
+}
+```
+
+Rules:
+
+- Destructure as `mutateAsync` (rename it to a domain-specific verb, e.g. `signIn`, `createWidget`).
+- Wrap the call in `try` / `catch` — never let a rejected promise escape `react-hook-form`'s `handleSubmit`.
+- Use `mutate` (no `Async`) only for fire-and-forget calls where the component does not need to sequence further work after success.
+
+---
+
 ## Checklist for adding a new API integration
 
 - [ ] Interface file created / updated in `src/interfaces/<domain>.interface.ts`
@@ -278,13 +310,14 @@ export * from './dashboard.hooks'
 
 ## Conventions at a glance
 
-| Concern            | Rule                                                                             |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Private axios      | `const axios = useAxiosPrivate()` in the hook, passed to the request function    |
-| Public axios       | `axiosPublic` imported directly in the **request file** — not in the hook        |
-| Generic type       | Always provide `<ResponseType>` to axios method                                  |
-| Data unwrap        | `return response.data` inside `queryFn` / `mutationFn`                           |
-| Query key          | `[domain, ...params]` — include every variable used                              |
-| Deferred fetch     | `enabled` boolean param on every `useQuery` hook                                 |
-| Side-effects       | `onSuccess`/`onError` go in the **component**, not the hook                      |
-| Type imports       | Use `import type` for type-only imports                                          |
+| Concern        | Rule                                                                          |
+| -------------- | ----------------------------------------------------------------------------- |
+| Private axios  | `const axios = useAxiosPrivate()` in the hook, passed to the request function |
+| Public axios   | `axiosPublic` imported directly in the **request file** — not in the hook     |
+| Generic type   | Always provide `<ResponseType>` to axios method                               |
+| Data unwrap    | `return response.data` inside `queryFn` / `mutationFn`                        |
+| Query key      | `[domain, ...params]` — include every variable used                           |
+| Deferred fetch | `enabled` boolean param on every `useQuery` hook                              |
+| Side-effects   | `onSuccess`/`onError` go in the **component**, not the hook                   |
+| Mutation calls | Prefer `mutateAsync` + `await` in `try`/`catch` over `mutate` with callbacks  |
+| Type imports   | Use `import type` for type-only imports                                       |
