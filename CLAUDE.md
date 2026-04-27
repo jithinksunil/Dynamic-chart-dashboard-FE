@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session End
+
+Always run `bun run check` at the end of each session before stopping.
+
 ## Commands
 
 ```bash

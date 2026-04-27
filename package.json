@@ -16,11 +16,13 @@
     "check": "bun run spellcheck && bun run format:check && bun run typecheck && bun run lint"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.2.4",
     "@tanstack/react-query": "^5.100.5",
     "axios": "^1.15.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
