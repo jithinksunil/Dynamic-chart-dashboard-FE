@@ -26,9 +26,9 @@ src/
 
 Two axios instances live in `src/api/axios.ts`:
 
-| Instance | Source | When to use |
-| --- | --- | --- |
-| `axiosPublic` | import directly from `@/api` | Unauthenticated endpoints (login, register, public data) |
+| Instance       | Source                       | When to use                                                                                |
+| -------------- | ---------------------------- | ------------------------------------------------------------------------------------------ |
+| `axiosPublic`  | import directly from `@/api` | Unauthenticated endpoints (login, register, public data)                                   |
 | `axiosPrivate` | via `useAxiosPrivate()` hook | Authenticated endpoints — attaches `Authorization` header and handles token refresh on 401 |
 
 **Public calls** — import `axiosPublic` at the top of the hook file and pass it to the request function:
@@ -253,13 +253,13 @@ export * from './dashboard.hooks'
 
 ## Conventions at a glance
 
-| Concern            | Rule                                                                            |
-| ------------------ | ------------------------------------------------------------------------------- |
+| Concern            | Rule                                                                             |
+| ------------------ | -------------------------------------------------------------------------------- |
 | Private axios      | `const axios = useAxiosPrivate()` inside the hook — handles auth + token refresh |
-| Public axios       | Import `axiosPublic` from `@/api` directly — no hook, no interceptors needed   |
-| Generic type       | Always provide `<ResponseType>` to axios method                                 |
-| Data unwrap        | `return response.data` inside `queryFn` / `mutationFn`                          |
-| Query key          | `[domain, ...params]` — include every variable used                             |
-| Deferred fetch     | `enabled` boolean param on every `useQuery` hook                                |
-| Cache invalidation | Call `queryClient.invalidateQueries` in mutation `onSuccess`                    |
-| Type imports       | Use `import type` for type-only imports                                         |
+| Public axios       | Import `axiosPublic` from `@/api` directly — no hook, no interceptors needed     |
+| Generic type       | Always provide `<ResponseType>` to axios method                                  |
+| Data unwrap        | `return response.data` inside `queryFn` / `mutationFn`                           |
+| Query key          | `[domain, ...params]` — include every variable used                              |
+| Deferred fetch     | `enabled` boolean param on every `useQuery` hook                                 |
+| Cache invalidation | Call `queryClient.invalidateQueries` in mutation `onSuccess`                     |
+| Type imports       | Use `import type` for type-only imports                                          |

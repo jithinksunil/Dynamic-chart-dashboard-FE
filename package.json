@@ -7,9 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "spell-check": "cspell lint --config cspell.config.json",
+    "lint:fix": "eslint . --fix",
+    "spellcheck": "cspell lint --config cspell.config.json",
     "format": "prettier --write .",
-    "preview": "vite preview"
+    "format:check": "prettier --check .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "check": "bun run spellcheck && bun run format:check && bun run typecheck && bun run lint"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.5",
