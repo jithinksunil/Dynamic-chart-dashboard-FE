@@ -15,7 +15,7 @@ import { LinkButton, PrimaryButton } from '@/components/buttons'
 import { TextInput } from '@/components/forms/TextInput'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
-import { useSignUp } from '@/hooks'
+import { useSignUp, useInitialAuth } from '@/hooks'
 import { toastMessage } from '@/utility'
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/
@@ -33,6 +33,7 @@ type SignUpValues = z.infer<typeof signUpSchema>
 function SignUp() {
   const navigate = useNavigate()
   const { mutateAsync: signUp, isPending } = useSignUp()
+  const { isChecking } = useInitialAuth()
 
   const { control, handleSubmit } = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
@@ -47,6 +48,14 @@ function SignUp() {
     } catch (error: unknown) {
       toastMessage.error({ err: error })
     }
+  }
+
+  if (isChecking) {
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center px-4">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    )
   }
 
   return (

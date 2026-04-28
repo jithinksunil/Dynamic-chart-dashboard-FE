@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard } from 'lucide-react'
 import {
   Card,
@@ -14,7 +14,7 @@ import {
 import { LinkButton, PrimaryButton } from '@/components/buttons'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
-import { useSignIn } from '@/hooks'
+import { useSignIn, useInitialAuth } from '@/hooks'
 import { useAuth } from '@/context'
 import { toastMessage } from '@/utility'
 
@@ -30,6 +30,7 @@ function SignIn() {
   const location = useLocation()
   const { setAuth } = useAuth()
   const { mutateAsync: signIn, isPending } = useSignIn()
+  const { isChecking } = useInitialAuth()
 
   const { control, handleSubmit } = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
@@ -46,6 +47,14 @@ function SignIn() {
     } catch (error: unknown) {
       toastMessage.error({ err: error })
     }
+  }
+
+  if (isChecking) {
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center px-4">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    )
   }
 
   return (
