@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, FileSpreadsheet, LayoutDashboard, Upload } from 'lucide-react'
-import { useMemo } from 'react'
+import { ChevronRight, FileSpreadsheet, LayoutDashboard, LogOut, Upload } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
@@ -9,8 +9,8 @@ import { PrimaryButton } from '@/components/buttons'
 import { FileInput } from '@/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context'
-import { useListCsvUploads, useUploadCsv } from '@/hooks'
-import { toastMessage } from '@/utility'
+import { useListCsvUploads, useSignOut, useUploadCsv } from '@/hooks'
+import { Roles, toastMessage } from '@/utility'
 
 const csvUploadSchema = z.object({
   file: z.instanceof(File, { message: 'Please select a CSV file' }).refine(
@@ -32,7 +32,22 @@ const dateFormatter = new Intl.DateTimeFormat('en-IN', {
 function Dashboard() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const { auth } = useAuth()
+  const { auth, setAuth } = useAuth()
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+  const { mutateAsync: signOut, isPending: isSigningOut } = useSignOut()
+
+  const handleSignOut = async (): Promise<void> => {
+    try {
+      await signOut()
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
+    } finally {
+      queryClient.clear()
+      setAuth({ accessToken: '', role: Roles.USER })
+      navigate('/')
+    }
+  }
   const { mutateAsync: uploadCsv, isPending: isUploading } = useUploadCsv()
   const {
     data: csvUploads = [],
@@ -79,9 +94,28 @@ function Dashboard() {
               </p>
             </div>
           </div>
-          <div className="rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-sm">
-            <p className="text-muted-foreground">Signed in as</p>
-            <p className="text-foreground font-medium">{auth.role}</p>
+          <div className="relative" ref={userMenuRef}>
+            <button
+              type="button"
+              className="rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-sm text-left hover:bg-muted/70 transition-colors"
+              onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            >
+              <p className="text-muted-foreground">Signed in as</p>
+              <p className="text-foreground font-medium">{auth.role}</p>
+            </button>
+            {isUserMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 z-10 min-w-35 rounded-lg border border-border/70 bg-card shadow-md">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                  onClick={handleSignOut}
+                  disabled={isSigningOut}
+                >
+                  <LogOut className="h-4 w-4 text-muted-foreground" />
+                  {isSigningOut ? 'Signing out…' : 'Sign out'}
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -151,9 +185,7 @@ function Dashboard() {
                       onClick={() => navigate(`/dashboard/uploads/${csvUpload.id}`)}
                     >
                       <div className="min-w-0">
-                        <p className="text-foreground truncate font-medium">
-                          {csvUpload.fileName}
-                        </p>
+                        <p className="text-foreground truncate font-medium">{csvUpload.fileName}</p>
                         <p className="text-muted-foreground mt-1 text-sm">
                           Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
                         </p>

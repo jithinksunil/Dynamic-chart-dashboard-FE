@@ -5,6 +5,7 @@ export type {
   SigninResponse,
   SignInRequest,
   SignUpRequest,
+  SignOutResponse,
 } from './auth'
 export * from './csv.interface'
 export * from './common.interface'

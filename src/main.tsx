@@ -10,7 +10,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
-  // <StrictMode>
+  <StrictMode>
     <ErrorBoundary>
       <AuthProvider>
         <QueryClientProvider client={queryClient}>
@@ -19,5 +19,5 @@ createRoot(document.getElementById('root')!).render(
         </QueryClientProvider>
       </AuthProvider>
     </ErrorBoundary>
-  // </StrictMode>
+  </StrictMode>
 )

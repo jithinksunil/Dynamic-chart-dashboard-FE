@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 import type { SignInRequest, SignUpRequest } from '../interfaces'
-import { signIn, signUp, refresh } from '../requests'
+import { signIn, signUp, refresh, signOut } from '../requests'
+import useAxiosPrivate from './useAxiosPrivate.hook'
 
 export const useSignIn = () => {
   return useMutation({
@@ -24,6 +25,16 @@ export const useRefreshMutation = () => {
   return useMutation({
     mutationFn: async () => {
       const response = await refresh()
+      return response.data
+    },
+  })
+}
+
+export const useSignOut = () => {
+  const axios = useAxiosPrivate()
+  return useMutation({
+    mutationFn: async () => {
+      const response = await signOut({ axios })
       return response.data
     },
   })
