@@ -47,7 +47,7 @@ export const getChartMeta = ({
   axios,
   csvUploadId,
 }: CsvUploadIdParams): Promise<AxiosResponse<unknown>> =>
-  axios.get<unknown>(`/chart/${csvUploadId}`)
+  axios.get<unknown>(`/chart/${csvUploadId}/values`)
 
 export const getChartBuilder = ({
   axios,
