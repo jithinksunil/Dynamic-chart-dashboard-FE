@@ -9,19 +9,19 @@ export const RequireAuth = ({ allowedRoles }: { allowedRoles?: Roles[] }) => {
   const location = useLocation()
   const refresh = useRefreshToken()
   const [loading, setLoading] = useState(true)
-  const checkLoggedIn = async () => {
-    try {
-      if (auth.accessToken) return
-      await refresh()
-    } catch (err: unknown) {
-      toastMessage.error({ err })
-    } finally {
-      setLoading(false)
-    }
-  }
   useEffect(() => {
+    const checkLoggedIn = async () => {
+      try {
+        if (auth.accessToken) return
+        await refresh()
+      } catch (err: unknown) {
+        toastMessage.error({ err })
+      } finally {
+        setLoading(false)
+      }
+    }
     checkLoggedIn()
-  }, [])
+  }, [auth.accessToken, refresh])
 
   if (loading) return <p className="text-muted-foreground text-sm">Loading</p>
   if (!auth.accessToken) return <Navigate to="/" state={{ from: location }} replace />
