@@ -17,7 +17,7 @@ export const Router = () => {
               element={
                 <Suspense
                   fallback={
-                    <div className="bg-background flex min-h-screen items-center justify-center px-4">
+                    <div className="bg-background flex min-h-[50vh] items-end justify-center px-4">
                       <p className="text-muted-foreground text-sm">Loading...</p>
                     </div>
                   }
@@ -38,7 +38,7 @@ export const Router = () => {
                       element={
                         <Suspense
                           fallback={
-                            <div className="bg-background flex min-h-screen items-center justify-center px-4">
+                            <div className="bg-background flex min-h-[50vh] items-end justify-center px-4">
                               <p className="text-muted-foreground text-sm">Loading...</p>
                             </div>
                           }
