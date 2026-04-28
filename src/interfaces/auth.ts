@@ -35,3 +35,10 @@ export interface SignUpRequest {
 export interface SignOutResponse {
   message: string
 }
+
+export interface MeResponse {
+  id: string
+  name: string
+  email: string
+  role: Roles
+}

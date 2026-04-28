@@ -9,7 +9,7 @@ import { PrimaryButton } from '@/components/buttons'
 import { FileInput } from '@/components/forms'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context'
-import { useListCsvUploads, useSignOut, useUploadCsv } from '@/hooks'
+import { useListCsvUploads, useSignOut, useUploadCsv, useGetMe } from '@/hooks'
 import { Roles, toastMessage } from '@/utility'
 
 const csvUploadSchema = z.object({
@@ -49,6 +49,7 @@ export function Dashboard() {
     }
   }
   const { mutateAsync: uploadCsv, isPending: isUploading } = useUploadCsv()
+  const { data: me, isLoading: isLoadingMe } = useGetMe(!!auth.accessToken)
   const {
     data: csvUploads = [],
     isLoading: isLoadingCsvUploads,
@@ -100,7 +101,9 @@ export function Dashboard() {
             onClick={() => setIsUserMenuOpen((prev) => !prev)}
           >
             <p className="text-muted-foreground">Signed in as</p>
-            <p className="text-foreground font-medium">{auth.role}</p>
+            <p className="text-foreground font-medium">
+              {isLoadingMe ? '...' : me?.name || auth.role}
+            </p>
           </button>
           {isUserMenuOpen && (
             <div className="absolute right-0 top-full mt-2 z-10 min-w-35 rounded-lg border border-border/70 bg-card shadow-md">

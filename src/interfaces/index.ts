@@ -6,6 +6,7 @@ export type {
   SignInRequest,
   SignUpRequest,
   SignOutResponse,
+  MeResponse,
 } from './auth'
 export * from './csv.interface'
 export * from './common.interface'
