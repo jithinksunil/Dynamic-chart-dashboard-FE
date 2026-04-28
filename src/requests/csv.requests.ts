@@ -2,6 +2,8 @@ import type { AxiosInstance, AxiosResponse } from 'axios'
 import type {
   BuildChartRequest,
   BuildChartResponse,
+  ChartBuilderResponse,
+  ChartValuesResponse,
   CsvUploadItem,
   UploadCsvResponse,
   UpdateChartMetaRequest,
@@ -53,14 +55,14 @@ export const uploadCsv = ({
 export const getChartMeta = ({
   axios,
   csvUploadId,
-}: CsvUploadIdParams): Promise<AxiosResponse<unknown>> =>
-  axios.get<unknown>(`/chart/${csvUploadId}/values`)
+}: CsvUploadIdParams): Promise<AxiosResponse<ChartValuesResponse>> =>
+  axios.get<ChartValuesResponse>(`/chart/${csvUploadId}/values`)
 
 export const getChartBuilder = ({
   axios,
   csvUploadId,
-}: CsvUploadIdParams): Promise<AxiosResponse<unknown>> =>
-  axios.get<unknown>(`/chart/${csvUploadId}/meta`)
+}: CsvUploadIdParams): Promise<AxiosResponse<ChartBuilderResponse>> =>
+  axios.get<ChartBuilderResponse>(`/chart/${csvUploadId}/meta`)
 
 export const buildChart = ({
   axios,

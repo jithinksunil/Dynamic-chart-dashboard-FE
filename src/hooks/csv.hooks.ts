@@ -4,6 +4,7 @@ import type {
   BuildChartRequest,
   BuildChartResponse,
   ChartBuilderData,
+  ChartValuesResponse,
   ChartMetaItem,
   CsvUploadItem,
   UpdateChartMetaRequest,
@@ -76,13 +77,13 @@ export const useCsvUploadChartMeta = ({
 export const useCsvUploadChartData = ({
   csvUploadId,
   enabled = true,
-}: UseCsvUploadChartParams): UseQueryResult<unknown, Error> => {
+}: UseCsvUploadChartParams): UseQueryResult<ChartValuesResponse, Error> => {
   const axios = useAxiosPrivate()
 
   return useQuery({
     enabled: enabled && csvUploadId.length > 0,
     queryKey: ['csv-upload-chart-data', csvUploadId],
-    queryFn: async (): Promise<unknown> => {
+    queryFn: async (): Promise<ChartValuesResponse> => {
       const response = await getChartMeta({ axios, csvUploadId })
       return response.data
     },
