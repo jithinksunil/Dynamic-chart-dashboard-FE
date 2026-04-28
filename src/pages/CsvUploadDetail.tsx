@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, FileSpreadsheet, Plus, X } from 'lucide-react'
+import { ArrowLeft, FileSpreadsheet, Plus, X, Pencil } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Bar,
@@ -34,7 +34,13 @@ import {
   Label,
   buttonVariants,
 } from '@/components/ui'
-import { useBuildChart, useChartBuilder, useCsvUploadChartData, useListCsvUploads } from '@/hooks'
+import {
+  useBuildChart,
+  useChartBuilder,
+  useCsvUploadChartData,
+  useListCsvUploads,
+  useUpdateChartMeta,
+} from '@/hooks'
 import { cn } from '@/lib/utils'
 import {
   formatChartAxisValue,
@@ -301,6 +307,7 @@ function SelectField({ control, label, name, options }: SelectFieldProps) {
 export function CsvUploadDetail() {
   const queryClient = useQueryClient()
   const [isBuilderOpen, setIsBuilderOpen] = useState(false)
+  const [editingChartItem, setEditingChartItem] = useState<ChartRenderItem | null>(null)
   const { csvUploadId = '' } = useParams()
   const {
     data: csvUploads = [],
@@ -326,6 +333,9 @@ export function CsvUploadDetail() {
     enabled: csvUploadId.length > 0,
   })
   const { mutateAsync: createChart, isPending: isCreatingChart } = useBuildChart({ csvUploadId })
+  const { mutateAsync: updateChart, isPending: isUpdatingChart } = useUpdateChartMeta({
+    csvUploadId,
+  })
 
   const { control, handleSubmit, getValues, setValue, reset } = useForm<ChartBuilderFormValues>({
     resolver: zodResolver(chartBuilderSchema),
@@ -345,6 +355,7 @@ export function CsvUploadDetail() {
 
   const closeBuilderModal = useCallback((): void => {
     setIsBuilderOpen(false)
+    setEditingChartItem(null)
     reset({
       name: '',
       chartType: CHART_TYPE_OPTIONS[0],
@@ -352,6 +363,20 @@ export function CsvUploadDetail() {
       yAxis: chartBuilderData?.yAxisOptions[0] ?? '',
     })
   }, [chartBuilderData, reset])
+
+  const openEditBuilderModal = useCallback(
+    (chartItem: ChartRenderItem): void => {
+      setEditingChartItem(chartItem)
+      reset({
+        name: chartItem.name,
+        chartType: chartItem.chartType.trim().toUpperCase(),
+        xAxis: chartItem.xAxis,
+        yAxis: chartItem.yAxis,
+      })
+      setIsBuilderOpen(true)
+    },
+    [reset]
+  )
 
   useEffect(() => {
     if (!chartBuilderData) {
@@ -400,14 +425,27 @@ export function CsvUploadDetail() {
     yAxis,
   }: ChartBuilderFormValues): Promise<void> => {
     try {
-      await createChart({
-        name,
-        chartType,
-        xAxis,
-        yAxis,
-      })
+      if (editingChartItem) {
+        await updateChart({
+          chartMetaDataId: editingChartItem.id,
+          data: {
+            name,
+            chartType,
+            xAxis,
+            yAxis,
+          },
+        })
+        toastMessage.success({ message: 'Chart updated successfully' })
+      } else {
+        await createChart({
+          name,
+          chartType,
+          xAxis,
+          yAxis,
+        })
+        toastMessage.success({ message: 'Chart created successfully' })
+      }
 
-      toastMessage.success({ message: 'Chart created successfully' })
       closeBuilderModal()
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-data', csvUploadId] }),
@@ -503,13 +541,21 @@ export function CsvUploadDetail() {
           <div className="grid gap-4 xl:grid-cols-2">
             {chartItems.map((chartItem, index) => (
               <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle>{getChartDisplayName({ value: chartItem.raw, index })}</CardTitle>
                     <CardDescription>
                       {chartItem.chartType} chart using {chartItem.xAxis} and {chartItem.yAxis}
                     </CardDescription>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Edit chart"
+                    onClick={() => openEditBuilderModal(chartItem)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ChartRenderer chart={chartItem} />
@@ -533,9 +579,13 @@ export function CsvUploadDetail() {
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-1">
-                    <CardTitle id="build-chart-title">Build Chart</CardTitle>
+                    <CardTitle id="build-chart-title">
+                      {editingChartItem ? 'Edit Chart' : 'Build Chart'}
+                    </CardTitle>
                     <CardDescription>
-                      Select one x-axis, one y-axis, and one chart type to create the chart.
+                      {editingChartItem
+                        ? 'Update your chart configuration.'
+                        : 'Select one x-axis, one y-axis, and one chart type to create the chart.'}
                     </CardDescription>
                   </div>
                   <Button
@@ -604,9 +654,15 @@ export function CsvUploadDetail() {
                       <PrimaryButton
                         type="submit"
                         className="w-full sm:w-auto"
-                        disabled={isCreatingChart}
+                        disabled={isCreatingChart || isUpdatingChart}
                       >
-                        {isCreatingChart ? 'Creating chart…' : 'Create chart'}
+                        {isCreatingChart || isUpdatingChart
+                          ? editingChartItem
+                            ? 'Updating chart…'
+                            : 'Creating chart…'
+                          : editingChartItem
+                            ? 'Update chart'
+                            : 'Create chart'}
                       </PrimaryButton>
                     </div>
                   </form>

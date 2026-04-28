@@ -35,6 +35,9 @@ export interface BuildChartResponse {
   message?: string
 }
 
+export type UpdateChartMetaRequest = BuildChartRequest
+export type UpdateChartMetaResponse = BuildChartResponse
+
 export interface ChartDatum {
   [key: string]: string | number | null
 }

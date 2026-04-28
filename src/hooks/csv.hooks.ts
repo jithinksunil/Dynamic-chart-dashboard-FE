@@ -6,9 +6,18 @@ import type {
   ChartBuilderData,
   ChartMetaItem,
   CsvUploadItem,
+  UpdateChartMetaRequest,
+  UpdateChartMetaResponse,
   UploadCsvResponse,
 } from '@/interfaces'
-import { buildChart, getChartBuilder, getChartMeta, listCsvUploads, uploadCsv } from '@/requests'
+import {
+  buildChart,
+  getChartBuilder,
+  getChartMeta,
+  listCsvUploads,
+  updateChartMeta,
+  uploadCsv,
+} from '@/requests'
 import { normalizeChartBuilderResponse, normalizeChartMetaResponse } from '@/utility'
 import useAxiosPrivate from './useAxiosPrivate.hook'
 
@@ -106,6 +115,25 @@ export const useBuildChart = ({
   return useMutation({
     mutationFn: async (data: BuildChartRequest): Promise<BuildChartResponse> => {
       const response = await buildChart({ axios, csvUploadId, data })
+      return response.data
+    },
+  })
+}
+
+export const useUpdateChartMeta = ({
+  csvUploadId,
+}: {
+  csvUploadId: string
+}): UseMutationResult<
+  UpdateChartMetaResponse,
+  Error,
+  { chartMetaDataId: string; data: UpdateChartMetaRequest }
+> => {
+  const axios = useAxiosPrivate()
+
+  return useMutation({
+    mutationFn: async ({ chartMetaDataId, data }): Promise<UpdateChartMetaResponse> => {
+      const response = await updateChartMeta({ axios, csvUploadId, chartMetaDataId, data })
       return response.data
     },
   })

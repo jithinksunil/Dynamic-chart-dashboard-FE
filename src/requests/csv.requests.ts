@@ -4,6 +4,8 @@ import type {
   BuildChartResponse,
   CsvUploadItem,
   UploadCsvResponse,
+  UpdateChartMetaRequest,
+  UpdateChartMetaResponse,
 } from '@/interfaces'
 
 interface ListCsvUploadsParams {
@@ -22,6 +24,11 @@ interface CsvUploadIdParams {
 
 interface BuildChartParams extends CsvUploadIdParams {
   data: BuildChartRequest
+}
+
+interface UpdateChartMetaParams extends CsvUploadIdParams {
+  chartMetaDataId: string
+  data: UpdateChartMetaRequest
 }
 
 export const listCsvUploads = ({
@@ -61,3 +68,11 @@ export const buildChart = ({
   data,
 }: BuildChartParams): Promise<AxiosResponse<BuildChartResponse>> =>
   axios.post<BuildChartResponse>(`/chart/${csvUploadId}/build`, data)
+
+export const updateChartMeta = ({
+  axios,
+  csvUploadId,
+  chartMetaDataId,
+  data,
+}: UpdateChartMetaParams): Promise<AxiosResponse<UpdateChartMetaResponse>> =>
+  axios.put<UpdateChartMetaResponse>(`/chart/${csvUploadId}/chart-meta/${chartMetaDataId}`, data)
