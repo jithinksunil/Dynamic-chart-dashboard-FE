@@ -17,6 +17,29 @@ interface ChartAIChatProps {
   isPending?: boolean
 }
 
+function TypingIndicator() {
+  return (
+    <div className="flex flex-col gap-1 items-start">
+      <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3">
+        <div className="flex items-center gap-1">
+          <span
+            className="bg-muted-foreground/50 inline-block size-2 rounded-full animate-bounce"
+            style={{ animationDelay: '0ms' }}
+          />
+          <span
+            className="bg-muted-foreground/50 inline-block size-2 rounded-full animate-bounce"
+            style={{ animationDelay: '150ms' }}
+          />
+          <span
+            className="bg-muted-foreground/50 inline-block size-2 rounded-full animate-bounce"
+            style={{ animationDelay: '300ms' }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function ChartAIChat({
   chartName,
   messages,
@@ -30,7 +53,7 @@ export function ChartAIChat({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, isPending])
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -59,11 +82,11 @@ export function ChartAIChat({
   const handleSend = (): void => {
     const trimmed = inputValue.trim()
     if (!trimmed || isPending) return
-    onSend({ content: trimmed })
     setInputValue('')
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
     }
+    onSend({ content: trimmed })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -98,7 +121,7 @@ export function ChartAIChat({
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !isPending ? (
             <div className="flex h-full items-center justify-center">
               <div className="space-y-1 text-center">
                 <Sparkles className="text-muted-foreground/50 mx-auto h-8 w-8" />
@@ -106,29 +129,32 @@ export function ChartAIChat({
               </div>
             </div>
           ) : (
-            messages.map((message, index) => {
-              const isUser = message.role === 'USER'
-              return (
-                <div
-                  key={index}
-                  className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}
-                >
+            <>
+              {messages.map((message, index) => {
+                const isUser = message.role === 'USER'
+                return (
                   <div
-                    className={cn(
-                      'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                      isUser
-                        ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                        : 'bg-muted text-foreground rounded-tl-sm'
-                    )}
+                    key={index}
+                    className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}
                   >
-                    {message.content}
+                    <div
+                      className={cn(
+                        'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                        isUser
+                          ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                          : 'bg-muted text-foreground rounded-tl-sm'
+                      )}
+                    >
+                      {message.content}
+                    </div>
+                    <span className="text-muted-foreground px-1 text-xs">
+                      {chatTimeFormatter.format(new Date(message.createdAt))}
+                    </span>
                   </div>
-                  <span className="text-muted-foreground px-1 text-xs">
-                    {chatTimeFormatter.format(new Date(message.createdAt))}
-                  </span>
-                </div>
-              )
-            })
+                )
+              })}
+              {isPending ? <TypingIndicator /> : null}
+            </>
           )}
           <div ref={messagesEndRef} />
         </div>

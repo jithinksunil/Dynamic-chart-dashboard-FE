@@ -604,12 +604,10 @@ export function CsvUploadDetail() {
           onSend={async ({ content }) => {
             try {
               await sendMessage({ content })
-              await queryClient.invalidateQueries({
-                queryKey: ['chart-chat', aiChatChartItem.id],
-              })
             } catch (error: unknown) {
               toastMessage.error({ err: error })
             }
+            
           }}
         />
       ) : null}
