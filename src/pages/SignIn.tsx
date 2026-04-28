@@ -74,7 +74,7 @@ export function SignIn() {
           />
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 pt-2">
+        <CardFooter className="flex flex-col gap-3 pt-2 border-t-0 bg-transparent">
           <PrimaryButton type="submit" className="w-full" disabled={isPending}>
             {isPending ? 'Signing in…' : 'Sign in'}
           </PrimaryButton>
