@@ -354,7 +354,10 @@ function CsvUploadDetail() {
 
       toastMessage.success({ message: 'Chart created successfully' })
       closeBuilderModal()
-      await queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-builder', csvUploadId] })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-data', csvUploadId] }),
+        queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-builder', csvUploadId] }),
+      ])
     } catch (error: unknown) {
       toastMessage.error({ err: error })
     }

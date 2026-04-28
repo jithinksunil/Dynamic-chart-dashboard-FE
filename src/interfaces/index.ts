@@ -7,3 +7,4 @@ export type {
   SignUpRequest,
 } from './auth'
 export * from './csv.interface'
+export * from './common.interface'

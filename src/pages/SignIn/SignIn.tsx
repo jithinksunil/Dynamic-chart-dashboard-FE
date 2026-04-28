@@ -27,6 +27,7 @@ type SignInValues = z.infer<typeof signInSchema>
 
 function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setAuth } = useAuth()
   const { mutateAsync: signIn, isPending } = useSignIn()
 
@@ -40,7 +41,8 @@ function SignIn() {
       const data = await signIn(values)
       setAuth({ accessToken: data.accessToken, role: data.role })
       toastMessage.success({ message: 'Welcome back!' })
-      navigate('/dashboard')
+      const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard'
+      navigate(from, { replace: true })
     } catch (error: unknown) {
       toastMessage.error({ err: error })
     }
