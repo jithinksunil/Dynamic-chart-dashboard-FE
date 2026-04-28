@@ -15,11 +15,11 @@ import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { useSignIn } from '@/hooks'
 import { useAuth } from '@/context'
-import { toastMessage } from '@/utility'
+import { passwordRegex, passwordValidationMessage, toastMessage } from '@/utility'
 
 const signInSchema = z.object({
   email: z.email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().regex(passwordRegex, passwordValidationMessage),
 })
 
 type SignInValues = z.infer<typeof signInSchema>

@@ -15,11 +15,7 @@ import { TextInput } from '@/components/forms/TextInput'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
 import { useSignUp } from '@/hooks'
-import { toastMessage } from '@/utility'
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/
-const passwordValidationMessage =
-  'Password must be at least 6 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+import { passwordRegex, passwordValidationMessage, toastMessage } from '@/utility'
 
 const signUpSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
