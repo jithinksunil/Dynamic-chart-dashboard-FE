@@ -449,9 +449,6 @@ export function CsvUploadDetail() {
                 <h1 className="text-foreground text-2xl font-semibold">
                   {csvUpload?.fileName ?? 'CSV upload'}
                 </h1>
-                <p className="text-muted-foreground text-sm">
-                  Upload id: <span className="text-foreground font-medium">{csvUploadId}</span>
-                </p>
                 {csvUpload?.createdAt ? (
                   <p className="text-muted-foreground text-sm">
                     Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}

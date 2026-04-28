@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, FileSpreadsheet, LayoutDashboard, LogOut, Upload } from 'lucide-react'
+import { FileSpreadsheet, LayoutDashboard, LogOut, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -97,7 +97,7 @@ export function Dashboard() {
         <div className="relative" ref={userMenuRef}>
           <button
             type="button"
-            className="rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-sm text-left hover:bg-muted/70 transition-colors"
+            className="cursor-pointer rounded-lg border border-border/70 bg-muted/40 px-4 py-3 text-sm text-left hover:bg-muted/70 transition-colors"
             onClick={() => setIsUserMenuOpen((prev) => !prev)}
           >
             <p className="text-muted-foreground">Signed in as</p>
@@ -109,7 +109,7 @@ export function Dashboard() {
             <div className="absolute right-0 top-full mt-2 z-10 min-w-35 rounded-lg border border-border/70 bg-card shadow-md">
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-lg px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                className="cursor-pointer flex w-full items-center gap-2 rounded-lg px-4 py-3 text-sm text-foreground hover:bg-muted/50 transition-colors"
                 onClick={handleSignOut}
                 disabled={isSigningOut}
               >
@@ -127,18 +127,10 @@ export function Dashboard() {
             <Upload className="text-primary h-4 w-4" />
             Upload CSV
           </CardTitle>
-          <CardDescription>
-            Choose a CSV file to send to `dynamicDashboardBE` for processing.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <FileInput
-              control={control}
-              name="file"
-              label="Dataset file"
-              allowedTypes={['.csv', 'text/csv']}
-            />
+            <FileInput control={control} name="file" label="Dataset file" allowedTypes={['.csv']} />
             <PrimaryButton type="submit" className="w-full sm:w-auto" disabled={isUploading}>
               {isUploading ? 'Uploading…' : 'Upload CSV'}
             </PrimaryButton>
@@ -180,7 +172,7 @@ export function Dashboard() {
                 <li key={csvUpload.id} className="rounded-lg border border-border/70 bg-background">
                   <button
                     type="button"
-                    className="hover:bg-muted/40 flex w-full items-start justify-between gap-4 rounded-lg px-4 py-3 text-left transition-colors"
+                    className="cursor-pointer hover:bg-muted/40 flex w-full items-start justify-between gap-4 rounded-lg px-4 py-3 text-left transition-colors"
                     onClick={() => navigate(`/dashboard/uploads/${csvUpload.id}`)}
                   >
                     <div className="min-w-0">
@@ -188,12 +180,6 @@ export function Dashboard() {
                       <p className="text-muted-foreground mt-1 text-sm">
                         Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
                       </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <span className="bg-muted text-muted-foreground rounded-md px-2 py-1 text-xs">
-                        Ready
-                      </span>
-                      <ChevronRight className="text-muted-foreground h-4 w-4" />
                     </div>
                   </button>
                 </li>
