@@ -12,7 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b --noEmit",
     "check": "bun run spellcheck && bun run format:check && bun run typecheck && bun run lint",
     "prepare": "husky"
   },

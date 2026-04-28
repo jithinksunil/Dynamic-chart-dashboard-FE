@@ -2,16 +2,20 @@ import type { ApplicationRoutes } from '@/interfaces'
 import { Roles } from '@/utility'
 import { lazy } from 'react'
 
-const SignIn = lazy(() => import('@/pages/SignIn'))
-const SignUp = lazy(() => import('@/pages/SignUp'))
-const Dashboard = lazy(() => import('@/pages/Dashboard'))
-const CsvUploadDetail = lazy(() => import('@/pages/CsvUploadDetail'))
+const SignIn = lazy(() => import('@/pages/SignIn').then((module) => ({ default: module.SignIn })))
+const SignUp = lazy(() => import('@/pages/SignUp').then((module) => ({ default: module.SignUp })))
+const Dashboard = lazy(() =>
+  import('@/pages/Dashboard').then((module) => ({ default: module.Dashboard }))
+)
+const CsvUploadDetail = lazy(() =>
+  import('@/pages/CsvUploadDetail').then((module) => ({ default: module.CsvUploadDetail }))
+)
 
 export const routeConfig: ApplicationRoutes[] = [
   {
     routes: [
-      { path: '/', component: SignIn, title: 'Sign In' },
-      { path: '/sign-up', component: SignUp, title: 'Sign Up' },
+      { path: '/', component: SignIn, title: 'Sign In', requiredAuth: false },
+      { path: '/sign-up', component: SignUp, title: 'Sign Up', requiredAuth: false },
     ],
   },
   {

@@ -12,7 +12,7 @@ function Fallback({ error, resetErrorBoundary }: FallbackProps) {
         <p className="text-muted-foreground mt-2 text-sm">
           An unexpected error occurred. Try again, or reload the page.
         </p>
-        {error?.message && (
+        {error instanceof Error && error.message && (
           <pre className="bg-muted text-muted-foreground mt-4 max-h-40 overflow-auto rounded-md p-3 text-left text-xs">
             {error.message}
           </pre>

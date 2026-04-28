@@ -29,7 +29,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-IN', {
   timeStyle: 'short',
 })
 
-function Dashboard() {
+export function Dashboard() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { auth, setAuth } = useAuth()
@@ -207,5 +207,3 @@ function Dashboard() {
     </div>
   )
 }
-
-export default Dashboard

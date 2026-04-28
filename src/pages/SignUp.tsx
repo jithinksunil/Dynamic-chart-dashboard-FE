@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { LayoutDashboard } from 'lucide-react'
 import {
   Card,
@@ -12,38 +12,39 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { LinkButton, PrimaryButton } from '@/components/buttons'
+import { TextInput } from '@/components/forms/TextInput'
 import { EmailInput } from '@/components/forms/EmailInput'
 import { PasswordInput } from '@/components/forms/PasswordInput'
-import { useSignIn, useInitialAuth } from '@/hooks'
-import { useAuth } from '@/context'
+import { useSignUp, useInitialAuth } from '@/hooks'
 import { toastMessage } from '@/utility'
 
-const signInSchema = z.object({
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/
+const passwordValidationMessage =
+  'Password must be at least 6 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+
+const signUpSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required'),
   email: z.email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().regex(passwordRegex, passwordValidationMessage),
 })
 
-type SignInValues = z.infer<typeof signInSchema>
+type SignUpValues = z.infer<typeof signUpSchema>
 
-function SignIn() {
+export function SignUp() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const { setAuth } = useAuth()
-  const { mutateAsync: signIn, isPending } = useSignIn()
+  const { mutateAsync: signUp, isPending } = useSignUp()
   const { isChecking } = useInitialAuth()
 
-  const { control, handleSubmit } = useForm<SignInValues>({
-    resolver: zodResolver(signInSchema),
-    defaultValues: { email: '', password: '' },
+  const { control, handleSubmit } = useForm<SignUpValues>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { name: '', email: '', password: '' },
   })
 
-  const onSubmit = async (values: SignInValues): Promise<void> => {
+  const onSubmit = async (values: SignUpValues): Promise<void> => {
     try {
-      const data = await signIn(values)
-      setAuth({ accessToken: data.accessToken, role: data.role })
-      toastMessage.success({ message: 'Welcome back!' })
-      const from = (location.state as { from?: Location })?.from?.pathname ?? '/dashboard'
-      navigate(from, { replace: true })
+      await signUp(values)
+      toastMessage.success({ message: 'Account created! Please sign in.' })
+      navigate('/')
     } catch (error: unknown) {
       toastMessage.error({ err: error })
     }
@@ -71,14 +72,22 @@ function SignIn() {
 
         <Card className="bg-card border-border/50 shadow-2xl">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-foreground text-xl">Sign in</CardTitle>
+            <CardTitle className="text-foreground text-xl">Create an account</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Enter your credentials to access your dashboard
+              Fill in the details below to get started
             </CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <CardContent className="space-y-4">
+              <TextInput
+                control={control}
+                name="name"
+                label="Full name"
+                placeholder="Jane Doe"
+                autoComplete="name"
+                disabled={isPending}
+              />
               <EmailInput
                 control={control}
                 name="email"
@@ -90,17 +99,18 @@ function SignIn() {
                 control={control}
                 name="password"
                 label="Password"
-                placeholder="••••••••"
+                placeholder="Min. 6 chars, mixed case, number, symbol"
+                autoComplete="new-password"
                 disabled={isPending}
               />
             </CardContent>
 
             <CardFooter className="flex flex-col gap-3 pt-2">
               <PrimaryButton type="submit" className="w-full" disabled={isPending}>
-                {isPending ? 'Signing in…' : 'Sign in'}
+                {isPending ? 'Creating account…' : 'Create account'}
               </PrimaryButton>
               <p className="text-muted-foreground text-center text-sm">
-                Don&apos;t have an account? <LinkButton to="/sign-up">Sign up</LinkButton>
+                Already have an account? <LinkButton to="/">Sign in</LinkButton>
               </p>
             </CardFooter>
           </form>
@@ -109,5 +119,3 @@ function SignIn() {
     </div>
   )
 }
-
-export default SignIn

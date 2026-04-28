@@ -4,7 +4,7 @@ interface UnknownRecord {
   [key: string]: unknown
 }
 
-function isRecord({ value }: { value: unknown }): value is UnknownRecord {
+function isRecord({ value }: { value: unknown }): boolean {
   return typeof value === 'object' && value !== null
 }
 
@@ -73,7 +73,7 @@ function findColumnArray({ record, keys }: { record: UnknownRecord; keys: string
 }
 
 function getChartRecord({ value }: { value: unknown }): UnknownRecord | null {
-  return isRecord({ value }) ? value : null
+  return isRecord({ value }) ? (value as UnknownRecord) : null
 }
 
 function getNestedRecord({
@@ -85,7 +85,7 @@ function getNestedRecord({
 }): UnknownRecord | null {
   for (const key of keys) {
     if (isRecord({ value: record[key] })) {
-      return record[key]
+      return record[key] as UnknownRecord
     }
   }
 
@@ -102,16 +102,17 @@ function getNestedArray({ record, keys }: { record: UnknownRecord; keys: string[
   return []
 }
 
-function isChartObject({ value }: { value: unknown }): value is UnknownRecord {
+function isChartObject({ value }: { value: unknown }): boolean {
   if (!isRecord({ value })) {
     return false
   }
 
+  const record = value as UnknownRecord
   const hasChartMetadata =
-    getString({ record: value, keys: ['name', 'chartName', 'title'] }) !== null &&
-    getString({ record: value, keys: ['chartType', 'type', 'chart_type'] }) !== null
+    getString({ record, keys: ['name', 'chartName', 'title'] }) !== null &&
+    getString({ record, keys: ['chartType', 'type', 'chart_type'] }) !== null
 
-  return hasChartMetadata && Array.isArray(value.data)
+  return hasChartMetadata && Array.isArray(record.data)
 }
 
 function toChartDatum({ value }: { value: unknown }): ChartDatum | null {
@@ -121,7 +122,7 @@ function toChartDatum({ value }: { value: unknown }): ChartDatum | null {
 
   const chartDatum: ChartDatum = {}
 
-  for (const [key, entryValue] of Object.entries(value)) {
+  for (const [key, entryValue] of Object.entries(value as UnknownRecord)) {
     if (typeof entryValue === 'number' && Number.isFinite(entryValue)) {
       chartDatum[key] = entryValue
       continue
@@ -161,16 +162,14 @@ function normalizeChartMetaItem({
     return null
   }
 
-  const id = getString({ record: value, keys: ['id', '_id'] }) ?? `chart-${index}`
-  const name =
-    getString({ record: value, keys: ['name', 'chartName', 'title'] }) ?? 'Untitled chart'
-  const chartType =
-    getString({ record: value, keys: ['chartType', 'type', 'chart_type'] }) ?? 'Unknown'
-  const xAxis = getString({ record: value, keys: ['xAxis', 'x_axis', 'xAxisKey'] }) ?? 'Not set'
-  const yAxis = getString({ record: value, keys: ['yAxis', 'y_axis', 'yAxisKey'] }) ?? 'Not set'
+  const record = value as UnknownRecord
+  const id = getString({ record, keys: ['id', '_id'] }) ?? `chart-${index}`
+  const name = getString({ record, keys: ['name', 'chartName', 'title'] }) ?? 'Untitled chart'
+  const chartType = getString({ record, keys: ['chartType', 'type', 'chart_type'] }) ?? 'Unknown'
+  const xAxis = getString({ record, keys: ['xAxis', 'x_axis', 'xAxisKey'] }) ?? 'Not set'
+  const yAxis = getString({ record, keys: ['yAxis', 'y_axis', 'yAxisKey'] }) ?? 'Not set'
   const createdAt =
-    getString({ record: value, keys: ['createdAt', 'created_at', 'updatedAt', 'updated_at'] }) ??
-    null
+    getString({ record, keys: ['createdAt', 'created_at', 'updatedAt', 'updated_at'] }) ?? null
 
   return {
     id,
@@ -183,16 +182,15 @@ function normalizeChartMetaItem({
 }
 
 export function normalizeChartMetaResponse({ value }: { value: unknown }): ChartMetaItem[] {
-  const items = Array.isArray(value)
-    ? value
-    : isRecord({ value })
-      ? ((value.chartMeta ??
-          value.charts ??
-          value.data ??
-          value.items ??
-          value.results ??
-          []) as unknown[])
-      : []
+  let items: unknown[]
+  if (Array.isArray(value)) {
+    items = value
+  } else if (isRecord({ value })) {
+    const r = value as UnknownRecord
+    items = (r.chartMeta ?? r.charts ?? r.data ?? r.items ?? r.results ?? []) as unknown[]
+  } else {
+    items = []
+  }
 
   return items
     .map((item, index) => normalizeChartMetaItem({ value: item, index }))
@@ -200,10 +198,13 @@ export function normalizeChartMetaResponse({ value }: { value: unknown }): Chart
 }
 
 export function normalizeChartBuilderResponse({ value }: { value: unknown }): ChartBuilderData {
-  const builderRecord =
-    isRecord({ value }) && isRecord({ value: value.builder }) ? value.builder : value
+  const outerRecord = isRecord({ value }) ? (value as UnknownRecord) : null
+  const builderRecord: UnknownRecord | null =
+    outerRecord && isRecord({ value: outerRecord.builder })
+      ? (outerRecord.builder as UnknownRecord)
+      : outerRecord
 
-  if (!isRecord({ value: builderRecord })) {
+  if (!builderRecord) {
     return {
       chartTypes: [],
       xAxisOptions: [],
@@ -236,12 +237,14 @@ export function getChartItems({ value }: { value: unknown }): unknown[] {
     return []
   }
 
+  const record = value as UnknownRecord
+
   if (isChartObject({ value })) {
     return [value]
   }
 
   return getNestedArray({
-    record: value,
+    record,
     keys: ['charts', 'chartData', 'data', 'items', 'results'],
   })
 }

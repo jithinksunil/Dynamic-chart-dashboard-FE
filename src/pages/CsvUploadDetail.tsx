@@ -256,7 +256,7 @@ function SelectField({ control, label, name, options }: SelectFieldProps) {
   )
 }
 
-function CsvUploadDetail() {
+export function CsvUploadDetail() {
   const queryClient = useQueryClient()
   const [isBuilderOpen, setIsBuilderOpen] = useState(false)
   const { csvUploadId = '' } = useParams()
@@ -625,5 +625,3 @@ function CsvUploadDetail() {
     </div>
   )
 }
-
-export default CsvUploadDetail

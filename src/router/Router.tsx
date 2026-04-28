@@ -1,9 +1,9 @@
-import React, { Fragment, lazy, Suspense } from 'react'
+import { Fragment, lazy, Suspense } from 'react'
 import { BrowserRouter, Outlet, Route, Routes } from 'react-router-dom'
 import { routeConfig } from './routeConfig'
 import { RequireAuth } from '@/components/common'
 
-const NotFound = lazy(() => import('@/pages/NotFound'))
+const NotFound = lazy(() => import('@/pages/NotFound').then((m) => ({ default: m.NotFound })))
 
 export const Router = () => {
   return (

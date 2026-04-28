@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { buttonVariants } from '@/components/ui/button'
 
-function NotFound() {
+export function NotFound() {
   return (
     <div className="bg-background flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
@@ -21,5 +21,3 @@ function NotFound() {
     </div>
   )
 }
-
-export default NotFound

@@ -1,3 +1,6 @@
+import type { JSX, LazyExoticComponent } from 'react'
+import type { Roles } from '@/utility'
+
 export interface Route {
   path: string
   component: LazyExoticComponent<() => JSX.Element>
