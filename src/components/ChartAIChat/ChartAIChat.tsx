@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { Send, Sparkles, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { ChatMessage } from '@/interfaces'
@@ -137,16 +138,18 @@ export function ChartAIChat({
                     key={index}
                     className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start')}
                   >
-                    <div
-                      className={cn(
-                        'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                        isUser
-                          ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                          : 'bg-muted text-foreground rounded-tl-sm'
-                      )}
-                    >
-                      {message.content}
-                    </div>
+                    {isUser ? (
+                      <div className="bg-primary text-primary-foreground max-w-[80%] rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-sm leading-relaxed">
+                        {message.content}
+                      </div>
+                    ) : (
+                      <div
+                        className={cn(
+                          'bg-muted text-foreground prose prose-sm dark:prose-invert max-w-[80%] rounded-2xl rounded-tl-sm px-3.5 py-2.5'
+                        )}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.content) }}
+                      />
+                    )}
                     <span className="text-muted-foreground px-1 text-xs">
                       {chatTimeFormatter.format(new Date(message.createdAt))}
                     </span>
