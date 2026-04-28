@@ -21,7 +21,8 @@ export const RequireAuth = ({ allowedRoles }: { allowedRoles?: Roles[] }) => {
       }
     }
     checkLoggedIn()
-  }, [auth.accessToken, refresh])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refresh])
 
   if (loading) return <p className="text-muted-foreground text-sm">Loading</p>
   if (!auth.accessToken) return <Navigate to="/" state={{ from: location }} replace />
