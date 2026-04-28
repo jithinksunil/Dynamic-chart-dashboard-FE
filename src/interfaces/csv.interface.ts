@@ -83,3 +83,15 @@ export interface ChartRenderItem {
   data: ChartDatum[]
   raw: unknown
 }
+
+export type ChatRole = 'USER' | 'AGENT'
+
+export interface ChatMessage {
+  role: ChatRole
+  content: string
+  createdAt: string
+}
+
+export interface SendChatMessageRequest {
+  content: string
+}

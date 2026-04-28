@@ -3,19 +3,23 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import type {
   BuildChartRequest,
   BuildChartResponse,
+  ChatMessage,
   ChartBuilderData,
   ChartValuesResponse,
   ChartMetaItem,
   CsvUploadItem,
+  SendChatMessageRequest,
   UpdateChartMetaRequest,
   UpdateChartMetaResponse,
   UploadCsvResponse,
 } from '@/interfaces'
 import {
   buildChart,
+  getChatMessages,
   getChartBuilder,
   getChartMeta,
   listCsvUploads,
+  sendChatMessage,
   updateChartMeta,
   uploadCsv,
 } from '@/requests'
@@ -135,6 +139,42 @@ export const useUpdateChartMeta = ({
   return useMutation({
     mutationFn: async ({ chartMetaDataId, data }): Promise<UpdateChartMetaResponse> => {
       const response = await updateChartMeta({ axios, csvUploadId, chartMetaDataId, data })
+      return response.data
+    },
+  })
+}
+
+interface UseChartChatParams {
+  chartMetaDataId: string
+  enabled?: boolean
+}
+
+export const useGetChartChat = ({
+  chartMetaDataId,
+  enabled = true,
+}: UseChartChatParams): UseQueryResult<ChatMessage[], Error> => {
+  const axios = useAxiosPrivate()
+
+  return useQuery({
+    enabled: enabled && chartMetaDataId.length > 0,
+    queryKey: ['chart-chat', chartMetaDataId],
+    queryFn: async (): Promise<ChatMessage[]> => {
+      const response = await getChatMessages({ axios, chartMetaDataId })
+      return [...response.data].reverse()
+    },
+  })
+}
+
+export const useSendChartMessage = ({
+  chartMetaDataId,
+}: {
+  chartMetaDataId: string
+}): UseMutationResult<ChatMessage, Error, SendChatMessageRequest> => {
+  const axios = useAxiosPrivate()
+
+  return useMutation({
+    mutationFn: async (data: SendChatMessageRequest): Promise<ChatMessage> => {
+      const response = await sendChatMessage({ axios, chartMetaDataId, data })
       return response.data
     },
   })
