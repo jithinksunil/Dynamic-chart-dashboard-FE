@@ -75,4 +75,4 @@ export const updateChartMeta = ({
   chartMetaDataId,
   data,
 }: UpdateChartMetaParams): Promise<AxiosResponse<UpdateChartMetaResponse>> =>
-  axios.put<UpdateChartMetaResponse>(`/chart/${csvUploadId}/chart-meta/${chartMetaDataId}`, data)
+  axios.patch<UpdateChartMetaResponse>(`/chart/${csvUploadId}/chart-meta/${chartMetaDataId}`, data)
