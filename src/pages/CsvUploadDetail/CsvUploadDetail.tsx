@@ -69,7 +69,6 @@ interface SelectFieldProps {
   label: string
   options: string[]
   control: Control<ChartBuilderFormValues>
-  placeholder: string
 }
 
 const CHART_COLORS = ['#2563eb', '#0f766e', '#db2777', '#f59e0b', '#7c3aed', '#ea580c']
@@ -210,7 +209,7 @@ function ChartRenderer({ chart }: ChartRendererProps) {
   )
 }
 
-function SelectField({ control, label, name, options, placeholder }: SelectFieldProps) {
+function SelectField({ control, label, name, options }: SelectFieldProps) {
   return (
     <Controller
       control={control}
@@ -218,22 +217,36 @@ function SelectField({ control, label, name, options, placeholder }: SelectField
       render={({ field, fieldState }) => (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={name}>{label}</Label>
-          <select
-            id={name}
-            aria-invalid={!!fieldState.error}
-            className={cn(
-              'border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-lg border px-3 text-sm outline-none focus-visible:ring-3',
-              fieldState.error && 'border-destructive'
-            )}
-            {...field}
-          >
-            <option value="">{placeholder}</option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id={name}
+              aria-invalid={!!fieldState.error}
+              className={cn(
+                'border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full appearance-none rounded-lg border py-2 pl-3 pr-8 text-sm outline-none focus-visible:ring-3 scheme-dark',
+                fieldState.error && 'border-destructive'
+              )}
+              {...field}
+            >
+              {options.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <svg
+              className="text-muted-foreground pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
           {fieldState.error?.message ? (
             <p className="text-destructive text-sm">{fieldState.error.message}</p>
           ) : null}
@@ -570,21 +583,18 @@ function CsvUploadDetail() {
                         name="chartType"
                         label="Chart type"
                         options={CHART_TYPE_OPTIONS}
-                        placeholder="Select chart type"
                       />
                       <SelectField
                         control={control}
                         name="xAxis"
                         label="X-axis"
                         options={chartBuilderData.xAxisOptions}
-                        placeholder="Select x-axis"
                       />
                       <SelectField
                         control={control}
                         name="yAxis"
                         label="Y-axis"
                         options={chartBuilderData.yAxisOptions}
-                        placeholder="Select y-axis"
                       />
 
                       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

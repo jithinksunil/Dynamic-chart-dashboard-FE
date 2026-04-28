@@ -5,7 +5,7 @@ import { useRefreshToken } from './useRefreshToken.hook'
 
 const useAxiosPrivate = () => {
   const refresh = useRefreshToken()
-  const { auth } = useAuth()
+  const { auth, setAuth } = useAuth()
 
   useEffect(() => {
     const requestIntercept = axiosPrivate.interceptors.request.use(
@@ -38,7 +38,7 @@ const useAxiosPrivate = () => {
       axiosPrivate.interceptors.request.eject(requestIntercept)
       axiosPrivate.interceptors.response.eject(responseIntercept)
     }
-  }, [auth, refresh])
+  }, [auth])
 
   return axiosPrivate
 }

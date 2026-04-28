@@ -10,7 +10,7 @@ export const useRefreshToken = () => {
     const data = await mutateAsync()
     setAuth({ accessToken: data.accessToken, role: data.role })
     return data.accessToken
-  }, [mutateAsync, setAuth])
+  }, [])
 
   return refresh
 }
