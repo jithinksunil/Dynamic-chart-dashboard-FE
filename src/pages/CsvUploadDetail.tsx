@@ -607,7 +607,6 @@ export function CsvUploadDetail() {
             } catch (error: unknown) {
               toastMessage.error({ err: error })
             }
-            
           }}
         />
       ) : null}
