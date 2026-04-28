@@ -2,6 +2,14 @@ import type { ApplicationRoutes } from '@/interfaces'
 import { Roles } from '@/utility'
 import { lazy } from 'react'
 
+const AuthLayout = lazy(() =>
+  import('@/components/layouts/AuthLayout').then((module) => ({ default: module.AuthLayout }))
+)
+const DashboardLayout = lazy(() =>
+  import('@/components/layouts/DashboardLayout').then((module) => ({
+    default: module.DashboardLayout,
+  }))
+)
 const SignIn = lazy(() => import('@/pages/SignIn').then((module) => ({ default: module.SignIn })))
 const SignUp = lazy(() => import('@/pages/SignUp').then((module) => ({ default: module.SignUp })))
 const Dashboard = lazy(() =>
@@ -13,12 +21,14 @@ const CsvUploadDetail = lazy(() =>
 
 export const routeConfig: ApplicationRoutes[] = [
   {
+    layout: AuthLayout,
     routes: [
       { path: '/', component: SignIn, title: 'Sign In', requiredAuth: false },
       { path: '/sign-up', component: SignUp, title: 'Sign Up', requiredAuth: false },
     ],
   },
   {
+    layout: DashboardLayout,
     routes: [
       {
         path: '/dashboard',

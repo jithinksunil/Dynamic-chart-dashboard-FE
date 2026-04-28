@@ -1,4 +1,4 @@
-import type { JSX, LazyExoticComponent } from 'react'
+import type { ComponentType, JSX, LazyExoticComponent, ReactNode } from 'react'
 import type { Roles } from '@/utility'
 
 export interface Route {
@@ -10,6 +10,6 @@ export interface Route {
 }
 
 export interface ApplicationRoutes {
-  layout?: LazyExoticComponent<() => JSX.Element>
+  layout?: ComponentType<{ children: ReactNode }>
   routes: Route[]
 }

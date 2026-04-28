@@ -378,250 +378,245 @@ export function CsvUploadDetail() {
 
   if (csvUploadId.length === 0) {
     return (
-      <div className="bg-background flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-xl border border-border/70 shadow-sm">
-          <CardHeader>
-            <CardTitle>Missing upload id</CardTitle>
-            <CardDescription>We could not determine which CSV upload to open.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <Card className="w-full max-w-xl border border-border/70 shadow-sm">
+        <CardHeader>
+          <CardTitle>Missing upload id</CardTitle>
+          <CardDescription>We could not determine which CSV upload to open.</CardDescription>
+        </CardHeader>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-background min-h-screen">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-4 rounded-lg border border-border/70 bg-card px-5 py-5 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="space-y-3">
-              <Link
-                to="/dashboard"
-                className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit')}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to dashboard
-              </Link>
-              <div className="flex items-start gap-4">
-                <div className="bg-primary/10 border-primary/20 flex size-12 shrink-0 items-center justify-center rounded-lg border">
-                  <FileSpreadsheet className="text-primary h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                  <h1 className="text-foreground text-2xl font-semibold">
-                    {csvUpload?.fileName ?? 'CSV upload'}
-                  </h1>
+    <>
+      <header className="flex flex-col gap-4 rounded-lg border border-border/70 bg-card px-5 py-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-3">
+            <Link
+              to="/dashboard"
+              className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-fit')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to dashboard
+            </Link>
+            <div className="flex items-start gap-4">
+              <div className="bg-primary/10 border-primary/20 flex size-12 shrink-0 items-center justify-center rounded-lg border">
+                <FileSpreadsheet className="text-primary h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-foreground text-2xl font-semibold">
+                  {csvUpload?.fileName ?? 'CSV upload'}
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                  Upload id: <span className="text-foreground font-medium">{csvUploadId}</span>
+                </p>
+                {csvUpload?.createdAt ? (
                   <p className="text-muted-foreground text-sm">
-                    Upload id: <span className="text-foreground font-medium">{csvUploadId}</span>
+                    Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
                   </p>
-                  {csvUpload?.createdAt ? (
-                    <p className="text-muted-foreground text-sm">
-                      Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
-                    </p>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
             </div>
-
-            <Button size="lg" className="sm:self-start" onClick={() => setIsBuilderOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Build Chart
-            </Button>
           </div>
 
-          {isLoadingCsvUploads ? (
-            <p className="text-muted-foreground text-sm">Loading upload details...</p>
-          ) : null}
-          {isCsvUploadsError ? (
-            <p className="text-muted-foreground text-sm">
-              We could not match this page to the upload history, but the chart APIs can still load
-              by id.
-            </p>
-          ) : null}
-        </header>
+          <Button size="lg" className="sm:self-start" onClick={() => setIsBuilderOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Build Chart
+          </Button>
+        </div>
 
-        <section className="space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-foreground text-lg font-semibold">Charts</h2>
-            <p className="text-muted-foreground text-sm">
-              Rendered from `/api/chart/{'{csvUploadId}'}` using each chart&apos;s metadata.
-            </p>
-          </div>
+        {isLoadingCsvUploads ? (
+          <p className="text-muted-foreground text-sm">Loading upload details...</p>
+        ) : null}
+        {isCsvUploadsError ? (
+          <p className="text-muted-foreground text-sm">
+            We could not match this page to the upload history, but the chart APIs can still load by
+            id.
+          </p>
+        ) : null}
+      </header>
 
-          {isLoadingChartData ? (
-            <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
-              Loading chart data...
-            </div>
-          ) : null}
+      <section className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-foreground text-lg font-semibold">Charts</h2>
+          <p className="text-muted-foreground text-sm">
+            Rendered from `/api/chart/{'{csvUploadId}'}` using each chart&apos;s metadata.
+          </p>
+        </div>
 
-          {isChartDataError ? (
-            <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
-              <p className="text-foreground font-medium">Could not load chart data.</p>
-              <p className="text-muted-foreground">{chartDataError.message}</p>
-            </div>
-          ) : null}
-
-          {!isLoadingChartData && !isChartDataError && chartItems.length === 0 ? (
-            <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
-              No chart data returned for this upload.
-            </div>
-          ) : null}
-
-          {!isLoadingChartData && !isChartDataError && chartItems.length > 0 ? (
-            <div className="grid gap-4 xl:grid-cols-2">
-              {chartItems.map((chartItem, index) => {
-                const totalValue = getChartTotal({
-                  data: chartItem.data,
-                  valueKey: getChartAxisKey({
-                    data: chartItem.data,
-                    preferredKey: chartItem.yAxis,
-                    kind: 'number',
-                  }),
-                })
-
-                return (
-                  <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
-                    <CardHeader>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-1">
-                          <CardTitle>
-                            {getChartDisplayName({ value: chartItem.raw, index })}
-                          </CardTitle>
-                          <CardDescription>
-                            {chartItem.chartType} chart using {chartItem.xAxis} and{' '}
-                            {chartItem.yAxis}
-                          </CardDescription>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-40">
-                          <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
-                            <p className="text-muted-foreground text-xs">Rows</p>
-                            <p className="text-foreground font-medium">{chartItem.data.length}</p>
-                          </div>
-                          <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
-                            <p className="text-muted-foreground text-xs">Total</p>
-                            <p className="text-foreground font-medium">
-                              {totalValue !== null ? totalValue.toLocaleString('en-IN') : '—'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <ChartRenderer chart={chartItem} />
-                      <details className="rounded-lg border border-border/70 bg-muted/20">
-                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
-                          Raw chart JSON
-                        </summary>
-                        <div className="px-4 pb-4">
-                          <pre className="bg-muted/40 text-foreground overflow-x-auto rounded-lg border border-border/70 p-4 text-sm">
-                            {JSON.stringify(chartItem.raw, null, 2)}
-                          </pre>
-                        </div>
-                      </details>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          ) : null}
-        </section>
-
-        {isBuilderOpen ? (
-          <div
-            className="fixed inset-0 z-50 overflow-y-auto bg-black/45 px-4 py-6 sm:px-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="build-chart-title"
-          >
-            <div className="flex min-h-full items-start justify-center sm:items-center">
-              <div className="absolute inset-0" aria-hidden="true" onClick={closeBuilderModal} />
-              <Card className="relative z-10 w-full max-w-lg border border-border/70 shadow-xl">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-1">
-                      <CardTitle id="build-chart-title">Build Chart</CardTitle>
-                      <CardDescription>
-                        Select one x-axis, one y-axis, and one chart type to create the chart.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Close modal"
-                      onClick={closeBuilderModal}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="max-h-[calc(100svh-12rem)] space-y-4 overflow-y-auto">
-                  {isLoadingBuilder ? (
-                    <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
-                      Loading chart builder options...
-                    </div>
-                  ) : null}
-
-                  {isBuilderError ? (
-                    <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
-                      <p className="text-foreground font-medium">
-                        Could not load chart builder data.
-                      </p>
-                      <p className="text-muted-foreground">{builderError.message}</p>
-                    </div>
-                  ) : null}
-
-                  {!isLoadingBuilder && !isBuilderError && chartBuilderData ? (
-                    <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
-                      <TextInput
-                        control={control}
-                        name="name"
-                        label="Chart name"
-                        placeholder="Enter chart name"
-                      />
-                      <SelectField
-                        control={control}
-                        name="chartType"
-                        label="Chart type"
-                        options={CHART_TYPE_OPTIONS}
-                      />
-                      <SelectField
-                        control={control}
-                        name="xAxis"
-                        label="X-axis"
-                        options={chartBuilderData.xAxisOptions}
-                      />
-                      <SelectField
-                        control={control}
-                        name="yAxis"
-                        label="Y-axis"
-                        options={chartBuilderData.yAxisOptions}
-                      />
-
-                      <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full sm:w-auto"
-                          onClick={closeBuilderModal}
-                        >
-                          Cancel
-                        </Button>
-                        <PrimaryButton
-                          type="submit"
-                          className="w-full sm:w-auto"
-                          disabled={isCreatingChart}
-                        >
-                          {isCreatingChart ? 'Creating chart…' : 'Create chart'}
-                        </PrimaryButton>
-                      </div>
-                    </form>
-                  ) : null}
-                </CardContent>
-              </Card>
-            </div>
+        {isLoadingChartData ? (
+          <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+            Loading chart data...
           </div>
         ) : null}
-      </div>
-    </div>
+
+        {isChartDataError ? (
+          <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
+            <p className="text-foreground font-medium">Could not load chart data.</p>
+            <p className="text-muted-foreground">{chartDataError.message}</p>
+          </div>
+        ) : null}
+
+        {!isLoadingChartData && !isChartDataError && chartItems.length === 0 ? (
+          <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+            No chart data returned for this upload.
+          </div>
+        ) : null}
+
+        {!isLoadingChartData && !isChartDataError && chartItems.length > 0 ? (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {chartItems.map((chartItem, index) => {
+              const totalValue = getChartTotal({
+                data: chartItem.data,
+                valueKey: getChartAxisKey({
+                  data: chartItem.data,
+                  preferredKey: chartItem.yAxis,
+                  kind: 'number',
+                }),
+              })
+
+              return (
+                <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
+                  <CardHeader>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1">
+                        <CardTitle>
+                          {getChartDisplayName({ value: chartItem.raw, index })}
+                        </CardTitle>
+                        <CardDescription>
+                          {chartItem.chartType} chart using {chartItem.xAxis} and {chartItem.yAxis}
+                        </CardDescription>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-40">
+                        <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
+                          <p className="text-muted-foreground text-xs">Rows</p>
+                          <p className="text-foreground font-medium">{chartItem.data.length}</p>
+                        </div>
+                        <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
+                          <p className="text-muted-foreground text-xs">Total</p>
+                          <p className="text-foreground font-medium">
+                            {totalValue !== null ? totalValue.toLocaleString('en-IN') : '—'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <ChartRenderer chart={chartItem} />
+                    <details className="rounded-lg border border-border/70 bg-muted/20">
+                      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
+                        Raw chart JSON
+                      </summary>
+                      <div className="px-4 pb-4">
+                        <pre className="bg-muted/40 text-foreground overflow-x-auto rounded-lg border border-border/70 p-4 text-sm">
+                          {JSON.stringify(chartItem.raw, null, 2)}
+                        </pre>
+                      </div>
+                    </details>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        ) : null}
+      </section>
+
+      {isBuilderOpen ? (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/45 px-4 py-6 sm:px-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="build-chart-title"
+        >
+          <div className="flex min-h-full items-start justify-center sm:items-center">
+            <div className="absolute inset-0" aria-hidden="true" onClick={closeBuilderModal} />
+            <Card className="relative z-10 w-full max-w-lg border border-border/70 shadow-xl">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-1">
+                    <CardTitle id="build-chart-title">Build Chart</CardTitle>
+                    <CardDescription>
+                      Select one x-axis, one y-axis, and one chart type to create the chart.
+                    </CardDescription>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Close modal"
+                    onClick={closeBuilderModal}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="max-h-[calc(100svh-12rem)] space-y-4 overflow-y-auto">
+                {isLoadingBuilder ? (
+                  <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-8 text-center text-sm">
+                    Loading chart builder options...
+                  </div>
+                ) : null}
+
+                {isBuilderError ? (
+                  <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-4 text-sm">
+                    <p className="text-foreground font-medium">
+                      Could not load chart builder data.
+                    </p>
+                    <p className="text-muted-foreground">{builderError.message}</p>
+                  </div>
+                ) : null}
+
+                {!isLoadingBuilder && !isBuilderError && chartBuilderData ? (
+                  <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+                    <TextInput
+                      control={control}
+                      name="name"
+                      label="Chart name"
+                      placeholder="Enter chart name"
+                    />
+                    <SelectField
+                      control={control}
+                      name="chartType"
+                      label="Chart type"
+                      options={CHART_TYPE_OPTIONS}
+                    />
+                    <SelectField
+                      control={control}
+                      name="xAxis"
+                      label="X-axis"
+                      options={chartBuilderData.xAxisOptions}
+                    />
+                    <SelectField
+                      control={control}
+                      name="yAxis"
+                      label="Y-axis"
+                      options={chartBuilderData.yAxisOptions}
+                    />
+
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                        onClick={closeBuilderModal}
+                      >
+                        Cancel
+                      </Button>
+                      <PrimaryButton
+                        type="submit"
+                        className="w-full sm:w-auto"
+                        disabled={isCreatingChart}
+                      >
+                        {isCreatingChart ? 'Creating chart…' : 'Create chart'}
+                      </PrimaryButton>
+                    </div>
+                  </form>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }

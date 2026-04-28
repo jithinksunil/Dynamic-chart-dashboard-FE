@@ -1,21 +1,25 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '@/context'
-import { useRefreshMutation } from './auth.hooks'
+import { useRefreshToken } from './useRefreshToken.hook'
 
 export const useInitialAuth = () => {
-  const { setAuth } = useAuth()
   const navigate = useNavigate()
-  const { mutateAsync, isPending } = useRefreshMutation()
+  const refresh = useRefreshToken()
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    mutateAsync()
-      .then((data) => {
-        setAuth({ accessToken: data.accessToken, role: data.role })
+    const checkLoggedIn = async () => {
+      try {
+        await refresh()
         navigate('/dashboard', { replace: true })
-      })
-      .catch(() => {})
-  }, [mutateAsync, navigate, setAuth])
+      } catch {
+        console.log('Error refreshing token')
+      } finally {
+        setLoading(false)
+      }
+    }
+    checkLoggedIn()
+  }, [refresh, navigate])
 
-  return { isChecking: isPending }
+  return { isLoading: loading }
 }
