@@ -39,13 +39,14 @@ import { cn } from '@/lib/utils'
 import {
   formatChartAxisValue,
   formatChartTooltipValue,
+  formatCompactNumber,
   getChartAxisKey,
   getChartDisplayName,
-  getChartTotal,
   isDateAxis,
   normalizeChartRenderItems,
   sortChartData,
   toastMessage,
+  truncateText,
 } from '@/utility'
 
 const chartBuilderSchema = z.object({
@@ -122,7 +123,12 @@ function ChartRenderer({ chart }: ChartRendererProps) {
               cx="50%"
               cy="50%"
               outerRadius={110}
-              label
+              label={({ name, value }: { name?: string; value?: number }) => {
+                const label = hasDateXAxis
+                  ? formatChartTooltipValue({ value: name })
+                  : truncateText({ value: String(name ?? '') })
+                return `${label}: ${formatCompactNumber({ value: value ?? 0 })}`
+              }}
             >
               {chartData.map((_item: ChartDatum, index: number) => (
                 <Cell
@@ -132,11 +138,29 @@ function ChartRenderer({ chart }: ChartRendererProps) {
               ))}
             </Pie>
             <Tooltip
-              labelFormatter={(value) =>
-                hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
-              }
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const data = payload[0]
+                  const label = hasDateXAxis
+                    ? formatChartTooltipValue({ value: String(data.name) })
+                    : String(data.name)
+                  const formattedValue = formatCompactNumber({ value: data.value as number })
+
+                  return (
+                    <div
+                      className="bg-card text-foreground rounded-lg p-2.5 text-sm"
+                      style={{ boxShadow: 'var(--shadow)' }}
+                    >
+                      <p className="mb-1.5 font-medium">{label}</p>
+                      <p style={{ color: data.payload.fill ?? data.color }}>
+                        {numberKey} : {formattedValue}
+                      </p>
+                    </div>
+                  )
+                }
+                return null
+              }}
             />
-            <Legend />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -154,18 +178,27 @@ function ChartRenderer({ chart }: ChartRendererProps) {
               type={hasDateXAxis ? 'number' : 'category'}
               scale={hasDateXAxis ? 'time' : 'auto'}
               domain={hasDateXAxis ? ['dataMin', 'dataMax'] : undefined}
-              tickFormatter={(value) =>
-                hasDateXAxis ? formatChartAxisValue({ value }) : String(value)
-              }
+              tickFormatter={(value) => formatChartAxisValue({ value, isDate: hasDateXAxis })}
               minTickGap={24}
             />
-            <YAxis />
+            <YAxis tickFormatter={(value) => formatCompactNumber({ value: value as number })} />
             <Tooltip
+              contentStyle={{
+                backgroundColor: 'var(--card)',
+                border: 'none',
+                borderRadius: '8px',
+                boxShadow: 'var(--shadow)',
+              }}
+              itemStyle={{ color: 'var(--foreground)' }}
+              labelStyle={{ color: 'var(--foreground)' }}
               labelFormatter={(value) =>
-                hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
+                hasDateXAxis
+                  ? formatChartTooltipValue({ value, isDate: true })
+                  : formatChartTooltipValue({ value })
               }
+              formatter={(value, name) => [formatCompactNumber({ value: value as number }), name]}
             />
-            <Legend />
+            <Legend formatter={(value) => truncateText({ value: String(value) })} />
             <Line
               type="monotone"
               dataKey={numberKey}
@@ -190,18 +223,27 @@ function ChartRenderer({ chart }: ChartRendererProps) {
             type={hasDateXAxis ? 'number' : 'category'}
             scale={hasDateXAxis ? 'time' : 'auto'}
             domain={hasDateXAxis ? ['dataMin', 'dataMax'] : undefined}
-            tickFormatter={(value) =>
-              hasDateXAxis ? formatChartAxisValue({ value }) : String(value)
-            }
+            tickFormatter={(value) => formatChartAxisValue({ value, isDate: hasDateXAxis })}
             minTickGap={24}
           />
-          <YAxis />
+          <YAxis tickFormatter={(value) => formatCompactNumber({ value: value as number })} />
           <Tooltip
+            contentStyle={{
+              backgroundColor: 'var(--card)',
+              border: 'none',
+              borderRadius: '8px',
+              boxShadow: 'var(--shadow)',
+            }}
+            itemStyle={{ color: 'var(--foreground)' }}
+            labelStyle={{ color: 'var(--foreground)' }}
             labelFormatter={(value) =>
-              hasDateXAxis ? formatChartTooltipValue({ value }) : String(value)
+              hasDateXAxis
+                ? formatChartTooltipValue({ value, isDate: true })
+                : formatChartTooltipValue({ value })
             }
+            formatter={(value, name) => [formatCompactNumber({ value: value as number }), name]}
           />
-          <Legend />
+          <Legend formatter={(value) => truncateText({ value: String(value) })} />
           <Bar dataKey={numberKey} radius={[6, 6, 0, 0]} fill={CHART_COLORS[1]} />
         </BarChart>
       </ResponsiveContainer>
@@ -439,9 +481,6 @@ export function CsvUploadDetail() {
       <section className="space-y-4">
         <div className="space-y-1">
           <h2 className="text-foreground text-lg font-semibold">Charts</h2>
-          <p className="text-muted-foreground text-sm">
-            Rendered from `/api/chart/{'{csvUploadId}'}` using each chart&apos;s metadata.
-          </p>
         </div>
 
         {isLoadingChartData ? (
@@ -465,58 +504,21 @@ export function CsvUploadDetail() {
 
         {!isLoadingChartData && !isChartDataError && chartItems.length > 0 ? (
           <div className="grid gap-4 xl:grid-cols-2">
-            {chartItems.map((chartItem, index) => {
-              const totalValue = getChartTotal({
-                data: chartItem.data,
-                valueKey: getChartAxisKey({
-                  data: chartItem.data,
-                  preferredKey: chartItem.yAxis,
-                  kind: 'number',
-                }),
-              })
-
-              return (
-                <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
-                  <CardHeader>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-1">
-                        <CardTitle>
-                          {getChartDisplayName({ value: chartItem.raw, index })}
-                        </CardTitle>
-                        <CardDescription>
-                          {chartItem.chartType} chart using {chartItem.xAxis} and {chartItem.yAxis}
-                        </CardDescription>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm sm:min-w-40">
-                        <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
-                          <p className="text-muted-foreground text-xs">Rows</p>
-                          <p className="text-foreground font-medium">{chartItem.data.length}</p>
-                        </div>
-                        <div className="rounded-lg border border-border/70 bg-muted/40 px-3 py-2">
-                          <p className="text-muted-foreground text-xs">Total</p>
-                          <p className="text-foreground font-medium">
-                            {totalValue !== null ? totalValue.toLocaleString('en-IN') : '—'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <ChartRenderer chart={chartItem} />
-                    <details className="rounded-lg border border-border/70 bg-muted/20">
-                      <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
-                        Raw chart JSON
-                      </summary>
-                      <div className="px-4 pb-4">
-                        <pre className="bg-muted/40 text-foreground overflow-x-auto rounded-lg border border-border/70 p-4 text-sm">
-                          {JSON.stringify(chartItem.raw, null, 2)}
-                        </pre>
-                      </div>
-                    </details>
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {chartItems.map((chartItem, index) => (
+              <Card key={chartItem.id} className="border border-border/70 shadow-sm" size="sm">
+                <CardHeader>
+                  <div className="space-y-1">
+                    <CardTitle>{getChartDisplayName({ value: chartItem.raw, index })}</CardTitle>
+                    <CardDescription>
+                      {chartItem.chartType} chart using {chartItem.xAxis} and {chartItem.yAxis}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ChartRenderer chart={chartItem} />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         ) : null}
       </section>

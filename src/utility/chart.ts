@@ -424,31 +424,106 @@ export function sortChartData({
   })
 }
 
+// DD/MM/YY for axis ticks
 const axisDateFormatter = new Intl.DateTimeFormat('en-IN', {
   day: '2-digit',
-  month: 'short',
+  month: '2-digit',
+  year: '2-digit',
+})
+
+// DD/MM/YYYY for tooltips (more readable)
+const tooltipDateFormatter = new Intl.DateTimeFormat('en-IN', {
+  day: '2-digit',
+  month: '2-digit',
   year: 'numeric',
 })
 
-const tooltipDateFormatter = new Intl.DateTimeFormat('en-IN', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
+// Indian-locale compact number formatter: 10 → 10, 2000 → 2K, 500000 → 5L
+const compactNumberFormatter = new Intl.NumberFormat('en-IN', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
 })
 
-export function formatChartAxisValue({ value }: { value: unknown }): string {
-  const timestamp = toDateTimestamp({ value })
-  if (timestamp === null) {
-    return String(value ?? '')
-  }
+/** Maximum characters shown for a text label on an axis tick or legend entry. */
+export const TEXT_MAX_LENGTH = 16
 
-  return axisDateFormatter.format(new Date(timestamp))
+/** Truncate a string to TEXT_MAX_LENGTH characters, appending ellipsis if needed. */
+export function truncateText({
+  value,
+  maxLength = TEXT_MAX_LENGTH,
+}: {
+  value: string
+  maxLength?: number
+}): string {
+  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value
 }
 
-export function formatChartTooltipValue({ value }: { value: unknown }): string {
-  const timestamp = toDateTimestamp({ value })
-  if (timestamp === null) {
-    return String(value ?? '')
+/** Format a number using Indian compact notation (K / L / Cr …). */
+export function formatCompactNumber({ value }: { value: number }): string {
+  return compactNumberFormatter.format(value)
+}
+
+/**
+ * Format a value for a chart X/Y axis tick.
+ * - Timestamps (string or numeric when isDate=true) → DD/MM/YY
+ * - Numbers    → compact (2K, 5L …)
+ * - Strings    → truncated to TEXT_MAX_LENGTH
+ *
+ * Pass `isDate: true` when the value is a numeric epoch-ms timestamp
+ * (i.e. when Recharts stores dates as numbers via DATE_AXIS_DATA_KEY).
+ */
+export function formatChartAxisValue({
+  value,
+  isDate = false,
+}: {
+  value: unknown
+  isDate?: boolean
+}): string {
+  // Numeric timestamp path (DATE_AXIS_DATA_KEY case)
+  if (isDate && typeof value === 'number' && Number.isFinite(value)) {
+    return axisDateFormatter.format(new Date(value))
   }
 
-  return tooltipDateFormatter.format(new Date(timestamp))
+  // String ISO date path
+  const timestamp = toDateTimestamp({ value })
+  if (timestamp !== null) {
+    return axisDateFormatter.format(new Date(timestamp))
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatCompactNumber({ value })
+  }
+
+  return truncateText({ value: String(value ?? '') })
+}
+
+/**
+ * Format a value for a chart tooltip label.
+ * - Timestamps → DD/MM/YYYY
+ * - Numbers    → compact (2K, 5L …)
+ * - Strings    → returned as-is (full text in tooltip)
+ */
+export function formatChartTooltipValue({
+  value,
+  isDate = false,
+}: {
+  value: unknown
+  isDate?: boolean
+}): string {
+  // Numeric timestamp path (DATE_AXIS_DATA_KEY case)
+  if (isDate && typeof value === 'number' && Number.isFinite(value)) {
+    return tooltipDateFormatter.format(new Date(value))
+  }
+
+  // String ISO date path
+  const timestamp = toDateTimestamp({ value })
+  if (timestamp !== null) {
+    return tooltipDateFormatter.format(new Date(timestamp))
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return formatCompactNumber({ value })
+  }
+
+  return String(value ?? '')
 }
