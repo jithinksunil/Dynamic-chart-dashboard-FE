@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, FileSpreadsheet, Plus, X, Pencil } from 'lucide-react'
+import { ArrowLeft, FileSpreadsheet, Plus, X, Pencil, Sparkles } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Bar,
@@ -23,6 +23,7 @@ import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
 import type { ChartDatum, ChartRenderItem } from '@/interfaces'
 import { PrimaryButton } from '@/components/buttons'
+import { ChartAIChat } from '@/components/ChartAIChat'
 import { TextInput } from '@/components/forms'
 import {
   Button,
@@ -38,7 +39,9 @@ import {
   useBuildChart,
   useChartBuilder,
   useCsvUploadChartData,
+  useGetChartChat,
   useListCsvUploads,
+  useSendChartMessage,
   useUpdateChartMeta,
 } from '@/hooks'
 import { cn } from '@/lib/utils'
@@ -308,6 +311,14 @@ export function CsvUploadDetail() {
   const queryClient = useQueryClient()
   const [isBuilderOpen, setIsBuilderOpen] = useState(false)
   const [editingChartItem, setEditingChartItem] = useState<ChartRenderItem | null>(null)
+  const [aiChatChartItem, setAiChatChartItem] = useState<ChartRenderItem | null>(null)
+  const { data: aiChatMessages = [] } = useGetChartChat({
+    chartMetaDataId: aiChatChartItem?.id ?? '',
+    enabled: aiChatChartItem !== null,
+  })
+  const { mutateAsync: sendMessage, isPending: isSendingMessage } = useSendChartMessage({
+    chartMetaDataId: aiChatChartItem?.id ?? '',
+  })
   const { csvUploadId = '' } = useParams()
   const {
     data: csvUploads = [],
@@ -363,6 +374,14 @@ export function CsvUploadDetail() {
       yAxis: chartBuilderData?.yAxisOptions[0] ?? '',
     })
   }, [chartBuilderData, reset])
+
+  const openAIChat = useCallback((chartItem: ChartRenderItem): void => {
+    setAiChatChartItem(chartItem)
+  }, [])
+
+  const closeAIChat = useCallback((): void => {
+    setAiChatChartItem(null)
+  }, [])
 
   const openEditBuilderModal = useCallback(
     (chartItem: ChartRenderItem): void => {
@@ -548,14 +567,24 @@ export function CsvUploadDetail() {
                       {chartItem.chartType} chart using {chartItem.xAxis} and {chartItem.yAxis}
                     </CardDescription>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label="Edit chart"
-                    onClick={() => openEditBuilderModal(chartItem)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="AI chat for chart"
+                      onClick={() => openAIChat(chartItem)}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Edit chart"
+                      onClick={() => openEditBuilderModal(chartItem)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ChartRenderer chart={chartItem} />
@@ -565,6 +594,22 @@ export function CsvUploadDetail() {
           </div>
         ) : null}
       </section>
+
+      {aiChatChartItem ? (
+        <ChartAIChat
+          chartName={aiChatChartItem.name}
+          messages={aiChatMessages}
+          onClose={closeAIChat}
+          isPending={isSendingMessage}
+          onSend={async ({ content }) => {
+            try {
+              await sendMessage({ content })
+            } catch (error: unknown) {
+              toastMessage.error({ err: error })
+            }
+          }}
+        />
+      ) : null}
 
       {isBuilderOpen ? (
         <div

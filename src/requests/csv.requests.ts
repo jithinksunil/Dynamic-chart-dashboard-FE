@@ -2,9 +2,11 @@ import type { AxiosInstance, AxiosResponse } from 'axios'
 import type {
   BuildChartRequest,
   BuildChartResponse,
+  ChatMessage,
   ChartBuilderResponse,
   ChartValuesResponse,
   CsvUploadItem,
+  SendChatMessageRequest,
   UploadCsvResponse,
   UpdateChartMetaRequest,
   UpdateChartMetaResponse,
@@ -31,6 +33,17 @@ interface BuildChartParams extends CsvUploadIdParams {
 interface UpdateChartMetaParams extends CsvUploadIdParams {
   chartMetaDataId: string
   data: UpdateChartMetaRequest
+}
+
+interface GetChatMessagesParams {
+  axios: AxiosInstance
+  chartMetaDataId: string
+}
+
+interface SendChatMessageParams {
+  axios: AxiosInstance
+  chartMetaDataId: string
+  data: SendChatMessageRequest
 }
 
 export const listCsvUploads = ({
@@ -78,3 +91,16 @@ export const updateChartMeta = ({
   data,
 }: UpdateChartMetaParams): Promise<AxiosResponse<UpdateChartMetaResponse>> =>
   axios.patch<UpdateChartMetaResponse>(`/chart/${csvUploadId}/chart-meta/${chartMetaDataId}`, data)
+
+export const getChatMessages = ({
+  axios,
+  chartMetaDataId,
+}: GetChatMessagesParams): Promise<AxiosResponse<ChatMessage[]>> =>
+  axios.get<ChatMessage[]>(`/chart/${chartMetaDataId}/chat`)
+
+export const sendChatMessage = ({
+  axios,
+  chartMetaDataId,
+  data,
+}: SendChatMessageParams): Promise<AxiosResponse<ChatMessage>> =>
+  axios.post<ChatMessage>(`/chart/${chartMetaDataId}/chat`, data)

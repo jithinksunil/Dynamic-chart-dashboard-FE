@@ -1,21 +1,25 @@
 import type { UseMutationResult, UseQueryResult } from '@tanstack/react-query'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   BuildChartRequest,
   BuildChartResponse,
+  ChatMessage,
   ChartBuilderData,
   ChartValuesResponse,
   ChartMetaItem,
   CsvUploadItem,
+  SendChatMessageRequest,
   UpdateChartMetaRequest,
   UpdateChartMetaResponse,
   UploadCsvResponse,
 } from '@/interfaces'
 import {
   buildChart,
+  getChatMessages,
   getChartBuilder,
   getChartMeta,
   listCsvUploads,
+  sendChatMessage,
   updateChartMeta,
   uploadCsv,
 } from '@/requests'
@@ -136,6 +140,63 @@ export const useUpdateChartMeta = ({
     mutationFn: async ({ chartMetaDataId, data }): Promise<UpdateChartMetaResponse> => {
       const response = await updateChartMeta({ axios, csvUploadId, chartMetaDataId, data })
       return response.data
+    },
+  })
+}
+
+interface UseChartChatParams {
+  chartMetaDataId: string
+  enabled?: boolean
+}
+
+export const useGetChartChat = ({
+  chartMetaDataId,
+  enabled = true,
+}: UseChartChatParams): UseQueryResult<ChatMessage[], Error> => {
+  const axios = useAxiosPrivate()
+
+  return useQuery({
+    enabled: enabled && chartMetaDataId.length > 0,
+    queryKey: ['chart-chat', chartMetaDataId],
+    queryFn: async (): Promise<ChatMessage[]> => {
+      const response = await getChatMessages({ axios, chartMetaDataId })
+      return [...response.data].reverse()
+    },
+  })
+}
+
+export const useSendChartMessage = ({
+  chartMetaDataId,
+}: {
+  chartMetaDataId: string
+}): UseMutationResult<ChatMessage, Error, SendChatMessageRequest> => {
+  const axios = useAxiosPrivate()
+  const queryClient = useQueryClient()
+  const queryKey = ['chart-chat', chartMetaDataId]
+
+  return useMutation({
+    mutationFn: async (data: SendChatMessageRequest): Promise<ChatMessage> => {
+      const response = await sendChatMessage({ axios, chartMetaDataId, data })
+      return response.data
+    },
+    onMutate: async ({ content }) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<ChatMessage[]>(queryKey)
+      const userMessage: ChatMessage = {
+        role: 'USER',
+        content,
+        createdAt: new Date().toISOString(),
+      }
+      queryClient.setQueryData<ChatMessage[]>(queryKey, (old = []) => [...old, userMessage])
+      return { previous }
+    },
+    onSuccess: (agentMessage) => {
+      queryClient.setQueryData<ChatMessage[]>(queryKey, (old = []) => [...old, agentMessage])
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(queryKey, context.previous)
+      }
     },
   })
 }
