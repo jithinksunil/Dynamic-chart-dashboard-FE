@@ -127,11 +127,7 @@ export const useBuildChart = ({
   })
 }
 
-export const useUpdateChartMeta = ({
-  csvUploadId,
-}: {
-  csvUploadId: string
-}): UseMutationResult<
+export const useUpdateChartMeta = (): UseMutationResult<
   UpdateChartMetaResponse,
   Error,
   { chartMetaDataId: string; data: UpdateChartMetaRequest }
@@ -140,7 +136,7 @@ export const useUpdateChartMeta = ({
 
   return useMutation({
     mutationFn: async ({ chartMetaDataId, data }): Promise<UpdateChartMetaResponse> => {
-      const response = await updateChartMeta({ axios, csvUploadId, chartMetaDataId, data })
+      const response = await updateChartMeta({ axios, chartMetaDataId, data })
       return response.data
     },
   })

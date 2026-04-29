@@ -348,9 +348,7 @@ export function CsvUploadDetail() {
   })
   const { mutateAsync: deleteChart, isPending: isDeletingChart } = useDeleteChart()
   const { mutateAsync: createChart, isPending: isCreatingChart } = useBuildChart({ csvUploadId })
-  const { mutateAsync: updateChart, isPending: isUpdatingChart } = useUpdateChartMeta({
-    csvUploadId,
-  })
+  const { mutateAsync: updateChart, isPending: isUpdatingChart } = useUpdateChartMeta()
 
   const { control, handleSubmit, getValues, setValue, reset } = useForm<ChartBuilderFormValues>({
     resolver: zodResolver(chartBuilderSchema),

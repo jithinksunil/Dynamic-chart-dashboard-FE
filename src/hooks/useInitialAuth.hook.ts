@@ -13,7 +13,7 @@ export const useInitialAuth = () => {
         await refresh()
         navigate('/dashboard', { replace: true })
       } catch {
-        console.log('Error refreshing token')
+        // token refresh failed — user is not authenticated
       } finally {
         setLoading(false)
       }
