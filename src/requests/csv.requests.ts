@@ -46,6 +46,16 @@ interface SendChatMessageParams {
   data: SendChatMessageRequest
 }
 
+interface DeleteCsvUploadParams {
+  axios: AxiosInstance
+  csvUploadId: string
+}
+
+interface DeleteChartParams {
+  axios: AxiosInstance
+  chartMetaDataId: string
+}
+
 export const listCsvUploads = ({
   axios,
 }: ListCsvUploadsParams): Promise<AxiosResponse<CsvUploadItem[]>> =>
@@ -104,3 +114,15 @@ export const sendChatMessage = ({
   data,
 }: SendChatMessageParams): Promise<AxiosResponse<ChatMessage>> =>
   axios.post<ChatMessage>(`/chart/${chartMetaDataId}/chat`, data)
+
+export const deleteCsvUpload = ({
+  axios,
+  csvUploadId,
+}: DeleteCsvUploadParams): Promise<AxiosResponse<void>> =>
+  axios.delete<void>(`/csv-upload/${csvUploadId}`)
+
+export const deleteChart = ({
+  axios,
+  chartMetaDataId,
+}: DeleteChartParams): Promise<AxiosResponse<void>> =>
+  axios.delete<void>(`/chart/${chartMetaDataId}`)

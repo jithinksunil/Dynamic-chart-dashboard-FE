@@ -15,6 +15,8 @@ import type {
 } from '@/interfaces'
 import {
   buildChart,
+  deleteChart,
+  deleteCsvUpload,
   getChatMessages,
   getChartBuilder,
   getChartMeta,
@@ -161,6 +163,26 @@ export const useGetChartChat = ({
     queryFn: async (): Promise<ChatMessage[]> => {
       const response = await getChatMessages({ axios, chartMetaDataId })
       return [...response.data].reverse()
+    },
+  })
+}
+
+export const useDeleteCsvUpload = (): UseMutationResult<void, Error, string> => {
+  const axios = useAxiosPrivate()
+
+  return useMutation({
+    mutationFn: async (csvUploadId: string): Promise<void> => {
+      await deleteCsvUpload({ axios, csvUploadId })
+    },
+  })
+}
+
+export const useDeleteChart = (): UseMutationResult<void, Error, string> => {
+  const axios = useAxiosPrivate()
+
+  return useMutation({
+    mutationFn: async (chartMetaDataId: string): Promise<void> => {
+      await deleteChart({ axios, chartMetaDataId })
     },
   })
 }

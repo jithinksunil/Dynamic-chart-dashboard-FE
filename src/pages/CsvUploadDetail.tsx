@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, FileSpreadsheet, Plus, X, Pencil, Sparkles } from 'lucide-react'
+import { ArrowLeft, FileSpreadsheet, Pencil, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Bar,
@@ -21,9 +21,10 @@ import { Controller, useForm } from 'react-hook-form'
 import type { Control } from 'react-hook-form'
 import { Link, useParams } from 'react-router-dom'
 import { z } from 'zod'
-import type { ChartDatum, ChartRenderItem } from '@/interfaces'
+import type { ChartRenderItem, ChartDatum } from '@/interfaces'
 import { PrimaryButton } from '@/components/buttons'
 import { ChartAIChat } from '@/components/ChartAIChat'
+import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 import { TextInput } from '@/components/forms'
 import {
   Button,
@@ -39,6 +40,7 @@ import {
   useBuildChart,
   useChartBuilder,
   useCsvUploadChartData,
+  useDeleteChart,
   useGetChartChat,
   useListCsvUploads,
   useSendChartMessage,
@@ -312,6 +314,7 @@ export function CsvUploadDetail() {
   const [isBuilderOpen, setIsBuilderOpen] = useState(false)
   const [editingChartItem, setEditingChartItem] = useState<ChartRenderItem | null>(null)
   const [aiChatChartItem, setAiChatChartItem] = useState<ChartRenderItem | null>(null)
+  const [deletingChartItem, setDeletingChartItem] = useState<ChartRenderItem | null>(null)
   const { data: aiChatMessages = [] } = useGetChartChat({
     chartMetaDataId: aiChatChartItem?.id ?? '',
     enabled: aiChatChartItem !== null,
@@ -343,6 +346,7 @@ export function CsvUploadDetail() {
     csvUploadId,
     enabled: csvUploadId.length > 0,
   })
+  const { mutateAsync: deleteChart, isPending: isDeletingChart } = useDeleteChart()
   const { mutateAsync: createChart, isPending: isCreatingChart } = useBuildChart({ csvUploadId })
   const { mutateAsync: updateChart, isPending: isUpdatingChart } = useUpdateChartMeta({
     csvUploadId,
@@ -396,6 +400,18 @@ export function CsvUploadDetail() {
     },
     [reset]
   )
+
+  const onDeleteChart = async (): Promise<void> => {
+    if (!deletingChartItem) return
+    try {
+      await deleteChart(deletingChartItem.id)
+      toastMessage.success({ message: 'Chart deleted successfully' })
+      setDeletingChartItem(null)
+      await queryClient.invalidateQueries({ queryKey: ['csv-upload-chart-data', csvUploadId] })
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
+    }
+  }
 
   useEffect(() => {
     if (!chartBuilderData) {
@@ -571,6 +587,15 @@ export function CsvUploadDetail() {
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      aria-label="Delete chart"
+                      className="hover:text-destructive"
+                      onClick={() => setDeletingChartItem(chartItem)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
                       aria-label="AI chat for chart"
                       onClick={() => openAIChat(chartItem)}
                     >
@@ -608,6 +633,16 @@ export function CsvUploadDetail() {
               toastMessage.error({ err: error })
             }
           }}
+        />
+      ) : null}
+
+      {deletingChartItem ? (
+        <DeleteConfirmModal
+          title="Delete chart"
+          description={`"${deletingChartItem.name}" will be permanently deleted.`}
+          isDeleting={isDeletingChart}
+          onConfirm={onDeleteChart}
+          onCancel={() => setDeletingChartItem(null)}
         />
       ) : null}
 

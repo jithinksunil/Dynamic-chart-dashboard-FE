@@ -1,15 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
-import { FileSpreadsheet, LayoutDashboard, LogOut, Upload } from 'lucide-react'
+import { FileSpreadsheet, LayoutDashboard, LogOut, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { PrimaryButton } from '@/components/buttons'
+import { DeleteConfirmModal } from '@/components/DeleteConfirmModal'
 import { FileInput } from '@/components/forms'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui'
 import { useAuth } from '@/context'
-import { useListCsvUploads, useSignOut, useUploadCsv, useGetMe } from '@/hooks'
+import { useDeleteCsvUpload, useListCsvUploads, useSignOut, useUploadCsv, useGetMe } from '@/hooks'
+import type { CsvUploadItem } from '@/interfaces'
 import { Roles, toastMessage } from '@/utility'
 
 const csvUploadSchema = z.object({
@@ -34,6 +36,7 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { auth, setAuth } = useAuth()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [deletingUpload, setDeletingUpload] = useState<CsvUploadItem | null>(null)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const { mutateAsync: signOut, isPending: isSigningOut } = useSignOut()
 
@@ -49,6 +52,7 @@ export function Dashboard() {
     }
   }
   const { mutateAsync: uploadCsv, isPending: isUploading } = useUploadCsv()
+  const { mutateAsync: deleteCsvUpload, isPending: isDeletingUpload } = useDeleteCsvUpload()
   const { data: me, isLoading: isLoadingMe } = useGetMe(!!auth.accessToken)
   const {
     data: csvUploads = [],
@@ -68,6 +72,18 @@ export function Dashboard() {
 
     return `${csvUploads.length} uploaded files`
   }, [csvUploads.length])
+
+  const onDeleteUpload = async (): Promise<void> => {
+    if (!deletingUpload) return
+    try {
+      await deleteCsvUpload(deletingUpload.id)
+      toastMessage.success({ message: 'File deleted successfully' })
+      setDeletingUpload(null)
+      await queryClient.invalidateQueries({ queryKey: ['csv-uploads'] })
+    } catch (error: unknown) {
+      toastMessage.error({ err: error })
+    }
+  }
 
   const onSubmit = async ({ file }: CsvUploadFormValues): Promise<void> => {
     try {
@@ -169,25 +185,46 @@ export function Dashboard() {
           {!isLoadingCsvUploads && !isCsvUploadsError && csvUploads.length > 0 ? (
             <ul className="grid gap-3 sm:grid-cols-2">
               {csvUploads.map((csvUpload) => (
-                <li key={csvUpload.id} className="rounded-lg border border-border/70 bg-background">
+                <li
+                  key={csvUpload.id}
+                  className="flex items-stretch rounded-lg border border-border/70 bg-background hover:bg-muted/40 transition-colors"
+                >
                   <button
                     type="button"
-                    className="cursor-pointer hover:bg-muted/40 flex w-full items-start justify-between gap-4 rounded-lg px-4 py-3 text-left transition-colors"
+                    className="cursor-pointer min-w-0 flex-1 rounded-l-lg px-4 py-3 text-left"
                     onClick={() => navigate(`/dashboard/uploads/${csvUpload.id}`)}
                   >
-                    <div className="min-w-0">
-                      <p className="text-foreground truncate font-medium">{csvUpload.fileName}</p>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
-                      </p>
-                    </div>
+                    <p className="text-foreground truncate font-medium">{csvUpload.fileName}</p>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      Uploaded {dateFormatter.format(new Date(csvUpload.createdAt))}
+                    </p>
                   </button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Delete file"
+                    className="hover:text-destructive m-2 shrink-0 self-start"
+                    onClick={() => setDeletingUpload(csvUpload)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </li>
               ))}
             </ul>
           ) : null}
         </CardContent>
       </Card>
+
+      {deletingUpload ? (
+        <DeleteConfirmModal
+          title="Delete file"
+          description={`"${deletingUpload.fileName}" and all its charts will be permanently deleted.`}
+          isDeleting={isDeletingUpload}
+          onConfirm={onDeleteUpload}
+          onCancel={() => setDeletingUpload(null)}
+        />
+      ) : null}
     </>
   )
 }
